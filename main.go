@@ -64,7 +64,6 @@ func main() {
 		ctx.InvertY()
 		ctx.DrawString(strconv.FormatFloat(angle, 'f', -1, 64), 1400, 300)
 		ctx.Pop()
-		ctx.Pop()
 
 		ctx.Stroke()
 		time.Sleep(time.Millisecond * 200)
