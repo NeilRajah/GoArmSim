@@ -6,12 +6,10 @@
 package main
 
 import (
-	// "github.com/faiface/pixel/pixelgl"
 	// "fmt"
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
 	// "math"
-	"strconv"
 	// "time"
 )
 
@@ -56,22 +54,14 @@ func main() {
 		ctx.Push()
 
 		//switch to the arm color
+		colors := robotArm.getColor()
+		ctx.SetRGB255(colors[0], colors[1], colors[2])
+
+		drawRobot(ctx) //draw the robot to the screen
+
+		//display the data to the screen
 		ctx.SetColor(colornames.White)
-
-		//draw the robot arm (make helper func)
-		ctx.DrawLine(robotArm.start.x, robotArm.start.y,
-			robotArm.getEndPt().x, robotArm.getEndPt().y)
-		// fmt.Println("x0:", robotArm.start.x, "y0:", robotArm.start.y, "x1:", robotArm.getEndPt().x, "y1:", robotArm.getEndPt().y)
-
-		//display the start and aend coords
-		displayPointCoords(ctx, robotArm.start, 1400, FONT_SIZE)
-		displayPointCoords(ctx, robotArm.getEndPt(), 1400, 70+FONT_SIZE)
-
-		//display the angle of the arm (combine with point and make into helper function)
-		drawFloat(ctx, robotArm.angle, 1400, 140+FONT_SIZE)
-
-		//draw
-		ctx.Stroke()
+		displayData(ctx)
 
 		//restore canvas state
 		ctx.Pop()
@@ -83,63 +73,47 @@ func main() {
 func createArm() {
 	//set the values for the arm
 	startPt := point{float64(WIDTH / 2), 0}
-	length := 700.0
+	length := 24.0
 	angle := ToRadians(0)
 
 	//create the arm
 	robotArm = Arm{
-		start:  startPt,
-		length: length,
-		angle:  angle,
-		vel:    0}
+		start:    startPt,
+		length:   length,
+		angle:    angle,
+		topSpeed: 60} //60 degrees per second, 10RPM
+
+	robotArm.setOutput(0.5) //50%
 } //end createArm
 
 //Update the arm for drawing purposes
 func updateModel() {
-	robotArm.setVelDPS(10)
 	robotArm.update()
+	if robotArm.getAngleDeg() > 45 {
+		robotArm.stop()
+	}
 } //end updateModel
 
-//DRAWING
+//SIMULATOR
 
-//set up the canvas
-//*canvas.Context ctx - responsible for drawing
-func setUpCanvas(ctx *canvas.Context) {
-	ctx.SetColor(colornames.Lightgray)                  //set the bg color
-	ctx.Clear()                                         //empty the canvas
-	ctx.SetColor(colornames.Black)                      //set the drawing color
-	ctx.SetLineWidth(30)                                //set the line width
-	ctx.LoadFontFace("../HelveticaNeue.ttf", FONT_SIZE) //set the font
-} //end setUpCanvas
+//draw the robot to the display
+//ctx *canvas.Context - responsible for drawing
+func drawRobot(ctx *canvas.Context) {
+	//draw the robot arm as lines between the joint points
+	ctx.DrawLine(robotArm.start.x, robotArm.start.y,
+		robotArm.getEndPtPxl().x, robotArm.getEndPtPxl().y)
 
-//display the end-point coordinate of the arm
-//*canvas.Context ctx - responsible for drawing
-//point p - endpoint in cartesian space
-//float64 x - x coordinate for the string
-//float64 y - y coordinate for the string
-func displayPointCoords(ctx *canvas.Context, p point, x, y float64) {
-	//show coordinates in (x,y) form
-	coordinates := "(" + strconv.FormatFloat(p.x, 'f', 2, 64) + " , " +
-		strconv.FormatFloat(p.y, 'f', 2, 64) + ")"
+	ctx.Stroke()
+} //end drawRobot
 
-	ctx.Push()
+//display the parameters of the robot onto the screen
+//ctx *canvas.Context - responsible for drawing
+func displayData(ctx *canvas.Context) {
+	//display the start and end coords
+	displayPointCoords(ctx, robotArm.getStartPtIn(), 1400, FONT_SIZE)
+	displayPointCoords(ctx, robotArm.getEndPtIn(), 1400, 70+FONT_SIZE)
 
-	ctx.InvertY() //flip y value to draw the string
-	ctx.DrawString(coordinates, x, y)
-
-	ctx.Pop()
-} //end displayPointCoords
-
-//draw a float at a specified location
-//*canvas.Context ctx - responsible for drawing
-//float64 f - float to be drawn
-//float64 x - x coordinate for the string
-//float64 y - y coordinate for the string
-func drawFloat(ctx *canvas.Context, f, x, y float64) {
-	ctx.Push()
-
-	ctx.InvertY() //flip y value to draw string
-	ctx.DrawString(strconv.FormatFloat(f, 'f', 2, 64), x, y)
-
-	ctx.Pop()
-} //end drawString
+	//display the angle of the arm (combine with point and make into helper function)
+	drawFloat(ctx, robotArm.angle, 1400, 140+FONT_SIZE)
+	drawFloat(ctx, robotArm.getAngleDeg(), 1600, 140+FONT_SIZE)
+} //end displayData
