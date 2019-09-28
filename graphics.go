@@ -14,11 +14,11 @@ import (
 //set up the canvas
 //*canvas.Context ctx - responsible for drawing
 func setUpCanvas(ctx *canvas.Context) {
-	ctx.SetColor(colornames.Lightgray)                  //set the bg color
-	ctx.Clear()                                         //empty the canvas
-	ctx.SetColor(colornames.Black)                      //set the drawing color
-	ctx.SetLineWidth(30)                                //set the line width
-	ctx.LoadFontFace("../HelveticaNeue.ttf", FONT_SIZE) //set the font
+	ctx.SetColor(colornames.Lightgray)                 //set the bg color
+	ctx.Clear()                                        //empty the canvas
+	ctx.SetColor(colornames.Black)                     //set the drawing color
+	ctx.SetLineWidth(30)                               //set the line width
+	ctx.LoadFontFace("../HelveticaNeue.ttf", fontSize) //set the font
 } //end setUpCanvas
 
 //display the end-point coordinate of the arm

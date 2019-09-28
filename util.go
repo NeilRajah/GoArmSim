@@ -9,16 +9,27 @@ import (
 	"math"
 )
 
-//convert an angle from radians to degrees
+//ToDegrees converts an angle from radians to degrees
 //float64 n - the angle in radians
 //return - the angle in degrees
 func ToDegrees(n float64) float64 {
 	return (n * 180.0) / (math.Pi)
 } //end toDegrees
 
-//convert an angle from degrees to radians
+//ToRadians converts an angle from degrees to radians
 //float64 n - the angle in degrees
 //return - the angle in radians
 func ToRadians(n float64) float64 {
 	return (n * math.Pi) / 180.0
 } //end toRadians
+
+//OutputClamp clamps a value between a min and a max
+//float64 n - output to clamp
+//float64 min - the bottom value of the clamp
+//float64 max - the top value of the clamp
+func OutputClamp(n, min, max float64) float64 {
+	if math.Signbit(n) { //if negative
+		return math.Max(n, min)
+	}
+	return math.Min(n, max) //if positive
+} //end outputClamp

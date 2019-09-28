@@ -13,11 +13,12 @@ import (
 	// "time"
 )
 
-//constants
-const WIDTH int = 1920       //width of the window
-const HEIGHT int = 1080      //height of the window
-const FPS int = 60           //frame rate of the animation
-const FONT_SIZE float64 = 60 //font size
+//Constants
+
+const width int = 1920      //WIDTH is the width of the window
+const height int = 1080     //HEIGHT is the height of the window
+const fps int = 100         //FPS is the frame rate of the animation
+const fontSize float64 = 60 //FONT_SIZE is the font size for the canvas
 
 //variables
 var c canvas.Canvas //canvas instance
@@ -27,9 +28,9 @@ var robotArm Arm    //arm struct
 func main() {
 	//create a new canvas instance
 	c := canvas.NewCanvas(&canvas.CanvasConfig{
-		Width:     WIDTH,
-		Height:    HEIGHT,
-		FrameRate: FPS, //same as regular monitor
+		Width:     width,
+		Height:    height,
+		FrameRate: fps,
 		Title:     "Arm Simulator",
 	})
 
@@ -53,14 +54,9 @@ func main() {
 		//save canvas state
 		ctx.Push()
 
-		//switch to the arm color
-		colors := robotArm.getColor()
-		ctx.SetRGB255(colors[0], colors[1], colors[2])
-
 		drawRobot(ctx) //draw the robot to the screen
 
 		//display the data to the screen
-		ctx.SetColor(colornames.White)
 		displayData(ctx)
 
 		//restore canvas state
@@ -72,7 +68,7 @@ func main() {
 //create the arm
 func createArm() {
 	//set the values for the arm
-	startPt := point{float64(WIDTH / 2), 0}
+	startPt := point{float64(width / 2), 0}
 	length := 24.0
 	angle := ToRadians(0)
 
@@ -81,17 +77,22 @@ func createArm() {
 		start:    startPt,
 		length:   length,
 		angle:    angle,
-		topSpeed: 60} //60 degrees per second, 10RPM
+		topSpeed: 240} //60 degrees per second, 10RPM
 
-	robotArm.setOutput(0.5) //50%
+	//create the PID controller
+	pid := pidcontroller{
+		kP: 2,
+		kI: 0.002,
+		kD: 0.2}
+
+	//set the PID controller for the arm
+	robotArm.setPIDController(pid)
 } //end createArm
 
 //Update the arm for drawing purposes
 func updateModel() {
-	robotArm.update()
-	if robotArm.getAngleDeg() > 45 {
-		robotArm.stop()
-	}
+	//move with PID control until the target is reached
+	robotArm.movePID(160, robotArm.getAngleDeg(), 1)
 } //end updateModel
 
 //SIMULATOR
@@ -99,6 +100,10 @@ func updateModel() {
 //draw the robot to the display
 //ctx *canvas.Context - responsible for drawing
 func drawRobot(ctx *canvas.Context) {
+	//switch to the arm color
+	colors := robotArm.getColor()
+	ctx.SetRGB255(colors[0], colors[1], colors[2])
+
 	//draw the robot arm as lines between the joint points
 	ctx.DrawLine(robotArm.start.x, robotArm.start.y,
 		robotArm.getEndPtPxl().x, robotArm.getEndPtPxl().y)
@@ -109,11 +114,13 @@ func drawRobot(ctx *canvas.Context) {
 //display the parameters of the robot onto the screen
 //ctx *canvas.Context - responsible for drawing
 func displayData(ctx *canvas.Context) {
+	ctx.SetColor(colornames.White)
+
 	//display the start and end coords
-	displayPointCoords(ctx, robotArm.getStartPtIn(), 1400, FONT_SIZE)
-	displayPointCoords(ctx, robotArm.getEndPtIn(), 1400, 70+FONT_SIZE)
+	displayPointCoords(ctx, robotArm.getStartPtIn(), 1400, fontSize)
+	displayPointCoords(ctx, robotArm.getEndPtIn(), 1400, 70+fontSize)
 
 	//display the angle of the arm (combine with point and make into helper function)
-	drawFloat(ctx, robotArm.angle, 1400, 140+FONT_SIZE)
-	drawFloat(ctx, robotArm.getAngleDeg(), 1600, 140+FONT_SIZE)
+	drawFloat(ctx, robotArm.angle, 1400, 140+fontSize)
+	drawFloat(ctx, robotArm.getAngleDeg(), 1600, 140+fontSize)
 } //end displayData
