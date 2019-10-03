@@ -32,7 +32,7 @@ func (pid *pidcontroller) calcPID(setpoint, current, epsilon float64) float64 {
 	error := setpoint - current
 
 	//update atTarget
-	pid.atTarget = (math.Abs(error) <= epsilon)
+	pid.atTarget = math.Abs(error) <= epsilon
 
 	//P value
 	pOut := pid.kP * error //output proportional to error
@@ -47,6 +47,12 @@ func (pid *pidcontroller) calcPID(setpoint, current, epsilon float64) float64 {
 
 	return pOut + iOut + dOut
 } //end calcPID
+
+//calculate the voltage required to hold an arm up at a certain angle
+//Arm a - arm to hold up
+func calcFFArm(a *Arm) float64 {
+	return (a.mass * g * (a.length / 2) * math.Cos(a.angle) * a.motor.kResistance) / ((a.motor.kStallTorque / a.motor.kStallCurrent) * a.gearRatio)
+} //end calcFFArm
 
 //return whether the error is within the epsilon bounds or not
 func (pid pidcontroller) isDone() bool {

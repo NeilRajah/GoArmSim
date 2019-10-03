@@ -6,11 +6,10 @@
 package main
 
 import (
-	// "fmt"
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
-	// "math"
-	// "time"
+	"image/color"
+	"math"
 )
 
 //Constants
@@ -21,8 +20,10 @@ const fps int = 50          //FPS is the frame rate of the animation
 const fontSize float64 = 60 //FONT_SIZE is the font size for the canvas
 
 //variables
-var c canvas.Canvas //canvas instance
-var robotArm *Arm   //arm struct
+var c canvas.Canvas                         //canvas instance
+var robotArm *Arm                           //arm struct
+var bgColor color.RGBA = colornames.Black   //background color
+var textColor color.RGBA = colornames.White //text color
 
 //create the arm struct to be used and run the graphics
 func main() {
@@ -48,8 +49,8 @@ func main() {
 		updateModel()
 
 		//clear the canvas
-		ctx.SetColor(colornames.Black) //set the bg color
-		ctx.Clear()                    //empty the canvas
+		ctx.SetColor(bgColor) //set the bg color
+		ctx.Clear()           //empty the canvas
 
 		//save canvas state
 		ctx.Push()
@@ -68,14 +69,19 @@ func main() {
 //create the arm
 func createArm() {
 	//set the values for the arm
-	robotArm = NewArm(1.0, 10.0, 159.3, 2, 0.002, 0.0, 0.00, "cim")
+	kP := 1.0
+	kI := 0.0
+	kD := 0.01
+	robotArm = NewArm(1.0, 10.0, 159.3, 2, kP, kI, kD, "cim", math.Pi/4)
 } //end createArm
 
 //Update the arm for drawing purposes
 func updateModel() {
 	//move with PID control until the target is reached
-	robotArm.movePID(160, robotArm.getAngleDeg(), 1)
-	// robotArm.setOutput(0.25)
+	// robotArm.movePID(ToRadians(160), robotArm.angle, 1)
+	// robotArm.movePIDFF(ToRadians(135), robotArm.angle, ToRadians(1))
+	robotArm.voltage = calcFFArm(robotArm)
+	robotArm.update()
 } //end updateModel
 
 //SIMULATOR
@@ -97,13 +103,17 @@ func drawRobot(ctx *canvas.Context) {
 //display the parameters of the robot onto the screen
 //ctx *canvas.Context - responsible for drawing
 func displayData(ctx *canvas.Context) {
-	ctx.SetColor(colornames.White)
+	ctx.SetColor(textColor)
 
 	//display the start and end coords
 	displayPointCoords(ctx, robotArm.getStartPtM(), 1400, fontSize)
 	displayPointCoords(ctx, robotArm.getEndPtM(), 1400, 70+fontSize)
 
 	//display the angle of the arm (combine with point and make into helper function)
-	drawFloat(ctx, robotArm.angle, 1400, 140+fontSize)
-	drawFloat(ctx, robotArm.getAngleDeg(), 1600, 140+fontSize)
+	// drawFloat(ctx, robotArm.angle, 1400, 140+fontSize, "Angle Radians")
+	startX := 1200.0
+	drawFloat(ctx, robotArm.getAngleDeg(), startX, 140+fontSize, "Angle Degrees")
+	drawFloat(ctx, robotArm.vel, startX, 210+fontSize, "Velocity Rad/s")
+	drawFloat(ctx, robotArm.acc, startX, 280+fontSize, "Acceleration Rad/s")
+	drawFloat(ctx, robotArm.voltage, startX, 350+fontSize, "Voltage volts")
 } //end displayData

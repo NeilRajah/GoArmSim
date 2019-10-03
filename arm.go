@@ -6,7 +6,7 @@
 package main
 
 import (
-	// "fmt"
+	"fmt"
 	"math"
 )
 
@@ -44,13 +44,14 @@ type Arm struct {
 //float64 kD - derivative constant
 //pidcontroller pid - calculates PID outputs
 //string motorName - name of the motor
-func NewArm(length, mass, gearRatio, numMotors, kP, kI, kD float64, motorName string) *Arm {
+//float64 angle - angle to start the arm at
+func NewArm(length, mass, gearRatio, numMotors, kP, kI, kD float64, motorName string, angle float64) *Arm {
 	//create the arm
 	arm := new(Arm)
 
 	//create and add all pre-determined values
 	arm.start = point{float64(width / 2), 0} //center of bottom edge of window
-	arm.angle = 0                            //start at horizontal
+	arm.angle = angle                        //start at specified angle
 	arm.vel = 0                              //start at rest
 	arm.acc = 0                              //start with no acceleration
 	arm.voltage = 0
@@ -119,8 +120,10 @@ func (a Arm) calcGravTorque() float64 {
 func (a *Arm) calcAccel(output float64) {
 	voltConst := (a.gearRatio * a.kT) / (a.motor.kResistance * a.moi)
 	velConst := (a.kT * a.gearRatio * a.gearRatio) / (a.motor.kV * a.motor.kResistance * a.moi)
+	accGrav := a.mass * g * math.Cos(a.angle) * (a.length / 2) //mgrcosA
+	// accGrav := 0.0
 
-	a.acc = (output)*voltConst - a.vel*velConst - (a.mass * g * a.length / 2 * math.Cos(a.angle))
+	a.acc = (output)*voltConst - a.vel*velConst - accGrav
 } //end calcAccel
 
 //MOTION
@@ -141,13 +144,24 @@ func (a *Arm) setOutput(percent float64) {
 
 //drive the arm using PID control
 func (a *Arm) movePID(setpoint, current, epsilon float64) {
-	if !robotArm.pid.atTarget { //if not at target
-		a.voltage = MaxVoltage * OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -a.maxVel, a.maxVel)
-	} else { //if at target
+	if robotArm.pid.atTarget && a.vel < a.maxVel*0.1 { //if at target
 		a.stopped = true
+	} else { //if not
+		a.voltage = MaxVoltage * OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -a.maxVel, a.maxVel)
 	}
 	a.update()
 } //end movePID
+
+//drive the arm using PIDFF control (PID + feedforward to hold arm)
+func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
+	if robotArm.pid.atTarget && a.vel < a.maxVel*0.1 { //if at target
+		a.stopped = true
+	} else { //if not
+		a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -a.maxVel, a.maxVel) + calcFFArm(a)
+		fmt.Println(calcFFArm(a))
+	}
+	a.update()
+}
 
 //UPDATE
 
@@ -161,10 +175,15 @@ func (a *Arm) update() {
 		a.vel += a.acc * float64(1.0/float64(fps))
 		a.moveArm(a.vel)
 
-		if a.angle < 0 {
-			a.angle = 0
-		} else if a.angle > math.Pi {
-			a.angle = math.Pi
+		if math.Abs(a.vel) > a.maxVel {
+			fmt.Println(a.vel)
+		}
+
+		if (a.angle < 0) || (a.angle > math.Pi) {
+			a.angle = OutputClamp(a.angle, 0, math.Pi)
+			a.voltage = 0
+			a.vel = 0
+			a.acc = 0
 		}
 	}
 } //end update
@@ -185,6 +204,6 @@ func (a *Arm) stop() {
 
 //get the speed-proportional color for the arm
 func (a Arm) getColor() [3]int {
-	c := [3]int{0, int((a.vel/a.maxVel)*164 + 90), 0}
+	c := [3]int{0, int(OutputClamp((math.Abs(a.vel)/a.maxVel)*127, 0, 127) + 127), 0}
 	return c
 } //end getColor

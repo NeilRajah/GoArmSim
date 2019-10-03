@@ -42,13 +42,14 @@ func displayPointCoords(ctx *canvas.Context, p point, x, y float64) {
 //draw a float at a specified location
 //*canvas.Context ctx - responsible for drawing
 //float64 f - float to be drawn
+//string s - message associated with float
 //float64 x - x coordinate for the string
 //float64 y - y coordinate for the string
-func drawFloat(ctx *canvas.Context, f, x, y float64) {
+func drawFloat(ctx *canvas.Context, f, x, y float64, s string) {
 	ctx.Push()
 
 	ctx.InvertY() //flip y value to draw string
-	ctx.DrawString(strconv.FormatFloat(f, 'f', 2, 64), x, y)
+	ctx.DrawString(s+": "+strconv.FormatFloat(f, 'f', 2, 64), x, y)
 
 	ctx.Pop()
 } //end drawString
