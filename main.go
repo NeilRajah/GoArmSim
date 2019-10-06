@@ -9,7 +9,7 @@ import (
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
 	"image/color"
-	"math"
+	// "math"
 )
 
 //Constants
@@ -69,19 +69,19 @@ func main() {
 //create the arm
 func createArm() {
 	//set the values for the arm
-	kP := 1.0
+	kP := 1.25
 	kI := 0.0
-	kD := 0.01
-	robotArm = NewArm(1.0, 10.0, 159.3, 2, kP, kI, kD, "cim", math.Pi/4)
+	kD := 0.07
+	robotArm = NewArm(1.0, 40.0, 159.3, 2, kP, kI, kD, "cim", 0)
 } //end createArm
 
 //Update the arm for drawing purposes
 func updateModel() {
 	//move with PID control until the target is reached
-	// robotArm.movePID(ToRadians(160), robotArm.angle, 1)
-	// robotArm.movePIDFF(ToRadians(135), robotArm.angle, ToRadians(1))
-	robotArm.voltage = calcFFArm(robotArm)
-	robotArm.update()
+	// robotArm.movePID(ToRadians(135), robotArm.angle, 1)
+	robotArm.movePIDFF(ToRadians(135), robotArm.angle, ToRadians(1))
+	// robotArm.voltage = calcFFArm(robotArm)
+	// robotArm.update()
 } //end updateModel
 
 //SIMULATOR

@@ -6,6 +6,7 @@
 package main
 
 import (
+	// "fmt"
 	"math"
 )
 
@@ -51,7 +52,9 @@ func (pid *pidcontroller) calcPID(setpoint, current, epsilon float64) float64 {
 //calculate the voltage required to hold an arm up at a certain angle
 //Arm a - arm to hold up
 func calcFFArm(a *Arm) float64 {
-	return (a.mass * g * (a.length / 2) * math.Cos(a.angle) * a.motor.kResistance) / ((a.motor.kStallTorque / a.motor.kStallCurrent) * a.gearRatio)
+	// return ((a.mass * g * (a.length / 2) * math.Cos(a.angle) * a.motor.kResistance) / ((a.motor.kStallTorque / a.motor.kStallCurrent) * a.gearRatio))
+	tGrav := a.mass * g * (a.length / 2) * math.Cos(a.angle) //mgrcosA
+	return (tGrav * a.motor.kResistance) / ((a.kT) * a.gearRatio)
 } //end calcFFArm
 
 //return whether the error is within the epsilon bounds or not

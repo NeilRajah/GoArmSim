@@ -6,7 +6,7 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"math"
 )
 
@@ -120,10 +120,10 @@ func (a Arm) calcGravTorque() float64 {
 func (a *Arm) calcAccel(output float64) {
 	voltConst := (a.gearRatio * a.kT) / (a.motor.kResistance * a.moi)
 	velConst := (a.kT * a.gearRatio * a.gearRatio) / (a.motor.kV * a.motor.kResistance * a.moi)
-	accGrav := a.mass * g * math.Cos(a.angle) * (a.length / 2) //mgrcosA
+	torqGrav := a.mass * g * math.Cos(a.angle) * (a.length / 2) //mgrcosA
 	// accGrav := 0.0
 
-	a.acc = (output)*voltConst - a.vel*velConst - accGrav
+	a.acc = (output)*voltConst - a.vel*velConst - torqGrav/a.moi
 } //end calcAccel
 
 //MOTION
@@ -147,7 +147,7 @@ func (a *Arm) movePID(setpoint, current, epsilon float64) {
 	if robotArm.pid.atTarget && a.vel < a.maxVel*0.1 { //if at target
 		a.stopped = true
 	} else { //if not
-		a.voltage = MaxVoltage * OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -a.maxVel, a.maxVel)
+		a.voltage = MaxVoltage * OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1)
 	}
 	a.update()
 } //end movePID
@@ -157,8 +157,7 @@ func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
 	if robotArm.pid.atTarget && a.vel < a.maxVel*0.1 { //if at target
 		a.stopped = true
 	} else { //if not
-		a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -a.maxVel, a.maxVel) + calcFFArm(a)
-		fmt.Println(calcFFArm(a))
+		a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1) + calcFFArm(a)
 	}
 	a.update()
 }
@@ -167,6 +166,8 @@ func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
 
 //update the coordinates of the endpoint based on the angle
 func (a *Arm) update() {
+	a.voltage = OutputClamp(a.voltage, -12, 12)
+
 	if a.stopped {
 		a.acc = 0
 		a.vel = 0
@@ -175,10 +176,6 @@ func (a *Arm) update() {
 		a.vel += a.acc * float64(1.0/float64(fps))
 		a.moveArm(a.vel)
 
-		if math.Abs(a.vel) > a.maxVel {
-			fmt.Println(a.vel)
-		}
-
 		if (a.angle < 0) || (a.angle > math.Pi) {
 			a.angle = OutputClamp(a.angle, 0, math.Pi)
 			a.voltage = 0
@@ -186,6 +183,8 @@ func (a *Arm) update() {
 			a.acc = 0
 		}
 	}
+
+	// fmt.Println(a.voltage)
 } //end update
 
 //move the arm with a given speed
@@ -204,6 +203,9 @@ func (a *Arm) stop() {
 
 //get the speed-proportional color for the arm
 func (a Arm) getColor() [3]int {
-	c := [3]int{0, int(OutputClamp((math.Abs(a.vel)/a.maxVel)*127, 0, 127) + 127), 0}
-	return c
+	color := [3]int{0, int(OutputClamp((math.Abs(a.vel)/a.maxVel)*127, 0, 127) + 127), 0}
+	if a.stopped {
+		color = [3]int{0, 0, 255}
+	}
+	return color
 } //end getColor
