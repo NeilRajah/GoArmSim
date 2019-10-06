@@ -77,7 +77,7 @@ func updateModel(ctx *canvas.Context) {
 	// robotArm.movePIDFF(ToRadians(135), robotArm.angle, ToRadians(1))
 	// robotArm.voltage = calcFFArm(robotArm)
 	// robotArm.update()
-	goal := Point{1, 1}
+	goal := point{1, 1}
 	rad := 100.0
 	ctx.SetColor(colornames.White)
 	ctx.DrawCircle(float64(width)-goal.x*pixelToMeters-rad, goal.y*pixelToMeters+rad, rad)

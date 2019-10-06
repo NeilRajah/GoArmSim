@@ -18,7 +18,7 @@ type Arm struct {
 	gearRatio float64 //gear ratio of the gearbox powering the arm
 
 	//Calculated attributes
-	start   Point   //the base point of the arm
+	start   point   //the base point of the arm
 	angle   float64 //the angle of the arm from the horizontal measured CCW in radians
 	vel     float64 //angular velocity of the arm in radians/second
 	maxVel  float64 //maximum possible velocity of the arm
@@ -50,7 +50,7 @@ func NewArm(length, mass, gearRatio, numMotors, kP, kI, kD float64, motorName st
 	arm := new(Arm)
 
 	//create and add all pre-determined values
-	arm.start = Point{float64(width / 2), 0} //center of bottom edge of window
+	arm.start = point{float64(width / 2), 0} //center of bottom edge of window
 	arm.angle = angle                        //start at specified angle
 	arm.vel = 0                              //start at rest
 	arm.acc = 0                              //start with no acceleration
@@ -79,24 +79,24 @@ func NewArm(length, mass, gearRatio, numMotors, kP, kI, kD float64, motorName st
 //SETTERS AND GETTERS
 
 //Get the end point of the arm in pixels
-func (a Arm) getEndPtPxl() Point {
+func (a Arm) getEndPtPxl() point {
 	endX := a.getLengthPxl()*math.Cos(a.angle) + a.start.x
 	endY := a.getLengthPxl()*math.Sin(a.angle) + a.start.y
 
-	return Point{endX, endY}
+	return point{endX, endY}
 } //end getEndPt
 
 //Get the end point of the arm in meters
-func (a Arm) getEndPtM() Point {
+func (a Arm) getEndPtM() point {
 	endX := a.length * math.Cos(a.angle)
 	endY := a.length * math.Sin(a.angle)
 
-	return Point{endX, endY}
+	return point{endX, endY}
 } //end getEndPtM
 
 //Get the start point of the arm in meters
-func (a Arm) getStartPtM() Point {
-	return Point{0, 0}
+func (a Arm) getStartPtM() point {
+	return point{0, 0}
 } //end getStartPtM
 
 //Get the angle of the arm in degrees
@@ -161,7 +161,7 @@ func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
 //move the arm to the line formed by a goal point and origin (single-joint IK)
 //point goal - (x,y) point in meters
 //float64 tolerance - tolerance for the angle in radians
-func (a *Arm) pointToGoal(goal Point, tolerance float64) {
+func (a *Arm) pointToGoal(goal point, tolerance float64) {
 	angle := math.Atan2(goal.y, goal.x)
 	a.movePIDFF(angle, a.angle, tolerance)
 } //end pointToGoal
