@@ -18,7 +18,7 @@ type Arm struct {
 	gearRatio float64 //gear ratio of the gearbox powering the arm
 
 	//Calculated attributes
-	start   point   //the base point of the arm
+	start   Point   //the base point of the arm
 	angle   float64 //the angle of the arm from the horizontal measured CCW in radians
 	vel     float64 //angular velocity of the arm in radians/second
 	maxVel  float64 //maximum possible velocity of the arm
@@ -50,7 +50,7 @@ func NewArm(length, mass, gearRatio, numMotors, kP, kI, kD float64, motorName st
 	arm := new(Arm)
 
 	//create and add all pre-determined values
-	arm.start = point{float64(width / 2), 0} //center of bottom edge of window
+	arm.start = Point{float64(width / 2), 0} //center of bottom edge of window
 	arm.angle = angle                        //start at specified angle
 	arm.vel = 0                              //start at rest
 	arm.acc = 0                              //start with no acceleration
@@ -67,11 +67,11 @@ func NewArm(length, mass, gearRatio, numMotors, kP, kI, kD float64, motorName st
 
 	//create and configure motor
 	arm.motor = MakeMotor(motorName)
-	arm.kT = (numMotors * arm.motor.kStallTorque) / arm.motor.kStallCurrent
+	arm.kT = (numMotors * arm.motor.kStallTorque) / arm.motor.kStallCurrent //stall torque of whole arm (sum of all motor stall torques)
 
 	//add and configure constants
 	arm.maxVel = (arm.motor.kFreeSpeed / gearRatio) / 60 * 2 * math.Pi //radians per second
-	arm.moi = 0.333333 * arm.mass * arm.length * arm.length
+	arm.moi = 0.333333 * arm.mass * arm.length * arm.length            //moment of inertia
 
 	return arm
 } //end NewArm
@@ -79,24 +79,24 @@ func NewArm(length, mass, gearRatio, numMotors, kP, kI, kD float64, motorName st
 //SETTERS AND GETTERS
 
 //Get the end point of the arm in pixels
-func (a Arm) getEndPtPxl() point {
+func (a Arm) getEndPtPxl() Point {
 	endX := a.getLengthPxl()*math.Cos(a.angle) + a.start.x
 	endY := a.getLengthPxl()*math.Sin(a.angle) + a.start.y
 
-	return point{endX, endY}
+	return Point{endX, endY}
 } //end getEndPt
 
 //Get the end point of the arm in meters
-func (a Arm) getEndPtM() point {
+func (a Arm) getEndPtM() Point {
 	endX := a.length * math.Cos(a.angle)
 	endY := a.length * math.Sin(a.angle)
 
-	return point{endX, endY}
+	return Point{endX, endY}
 } //end getEndPtM
 
 //Get the start point of the arm in meters
-func (a Arm) getStartPtM() point {
-	return point{0, 0}
+func (a Arm) getStartPtM() Point {
+	return Point{0, 0}
 } //end getStartPtM
 
 //Get the angle of the arm in degrees
@@ -117,26 +117,19 @@ func (a Arm) calcGravTorque() float64 {
 } //end calcGravTorque
 
 //Calculate the current acceleration of the arm
+//float64 output - output voltage to drive the arm
 func (a *Arm) calcAccel(output float64) {
-	voltConst := (a.gearRatio * a.kT) / (a.motor.kResistance * a.moi)
-	velConst := (a.kT * a.gearRatio * a.gearRatio) / (a.motor.kV * a.motor.kResistance * a.moi)
-	torqGrav := a.mass * g * math.Cos(a.angle) * (a.length / 2) //mgrcosA
-	// accGrav := 0.0
+	voltConst := (a.gearRatio * a.kT) / (a.motor.kResistance * a.moi)                           //proportional to voltage
+	velConst := (a.kT * a.gearRatio * a.gearRatio) / (a.motor.kV * a.motor.kResistance * a.moi) //proportional to velocity
+	torqGrav := a.calcGravTorque()                                                              //mgrcosA
 
 	a.acc = (output)*voltConst - a.vel*velConst - torqGrav/a.moi
 } //end calcAccel
 
 //MOTION
 
-//set the angular velocity of the arm in degrees per second
-//float64 newVel - the new angular velocity of the arm in degrees per second
-func (a *Arm) setVelDPS(newVel float64) {
-	a.vel = newVel
-	a.update()
-} //end setVel
-
-//set the vel of the arm in a percentage of the top speed
-//float64 percent - percentage of the top speed for velocity (between -1.0 and 1.0)
+//set the voltage of the arm in a percentage of the max voltage
+//float64 percent - percentage of the max voltage (between -1.0 and 1.0)
 func (a *Arm) setOutput(percent float64) {
 	a.voltage = MaxVoltage * percent
 	a.update()
@@ -144,7 +137,7 @@ func (a *Arm) setOutput(percent float64) {
 
 //drive the arm using PID control
 func (a *Arm) movePID(setpoint, current, epsilon float64) {
-	if robotArm.pid.atTarget && a.vel < a.maxVel*0.1 { //if at target
+	if robotArm.pid.atTarget && math.Abs(a.vel) < a.maxVel*0.1 { //if at target
 		a.stopped = true
 	} else { //if not
 		a.voltage = MaxVoltage * OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1)
@@ -153,6 +146,9 @@ func (a *Arm) movePID(setpoint, current, epsilon float64) {
 } //end movePID
 
 //drive the arm using PIDFF control (PID + feedforward to hold arm)
+//float64 setpoint - goal angle to move to
+//float64 current - current angle of the arm
+//float64 epsilon - tolerance for the angle in radians
 func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
 	if robotArm.pid.atTarget && a.vel < a.maxVel*0.1 { //if at target
 		a.stopped = true
@@ -160,7 +156,15 @@ func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
 		a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1) + calcFFArm(a)
 	}
 	a.update()
-}
+} //end movePIDFF
+
+//move the arm to the line formed by a goal point and origin (single-joint IK)
+//point goal - (x,y) point in meters
+//float64 tolerance - tolerance for the angle in radians
+func (a *Arm) pointToGoal(goal Point, tolerance float64) {
+	angle := math.Atan2(goal.y, goal.x)
+	a.movePIDFF(angle, a.angle, tolerance)
+} //end pointToGoal
 
 //UPDATE
 
@@ -203,9 +207,9 @@ func (a *Arm) stop() {
 
 //get the speed-proportional color for the arm
 func (a Arm) getColor() [3]int {
-	color := [3]int{0, int(OutputClamp((math.Abs(a.vel)/a.maxVel)*127, 0, 127) + 127), 0}
+	color := [3]int{0, int(OutputClamp((math.Abs(a.vel)/a.maxVel)*127, 0, 127) + 127), 0} //green
 	if a.stopped {
-		color = [3]int{0, 0, 255}
+		color = [3]int{0, 0, 255} //blue
 	}
 	return color
 } //end getColor

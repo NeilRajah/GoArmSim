@@ -6,10 +6,14 @@
 package main
 
 import (
+	"strconv"
+
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
-	"strconv"
 )
+
+const armWidth = 30.0 //armWidth is the thickness of the arm lines in pixels
+const boxThick = 10.0 //boxThick is the thickness of the box lines in pixels
 
 //set up the canvas
 //*canvas.Context ctx - responsible for drawing
@@ -26,7 +30,7 @@ func setUpCanvas(ctx *canvas.Context) {
 //point p - endpoint in cartesian space
 //float64 x - x coordinate for the string
 //float64 y - y coordinate for the string
-func displayPointCoords(ctx *canvas.Context, p point, x, y float64) {
+func displayPointCoords(ctx *canvas.Context, p Point, x, y float64) {
 	//show coordinates in (x,y) form
 	coordinates := "(" + strconv.FormatFloat(p.x, 'f', 2, 64) + " , " +
 		strconv.FormatFloat(p.y, 'f', 2, 64) + ")"

@@ -6,9 +6,10 @@
 package main
 
 import (
+	"image/color"
+
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
-	"image/color"
 	// "math"
 )
 
@@ -46,22 +47,16 @@ func main() {
 	//create the arm
 	c.Draw(func(ctx *canvas.Context) {
 		//update the arm
-		updateModel()
+		updateModel(ctx)
 
 		//clear the canvas
 		ctx.SetColor(bgColor) //set the bg color
 		ctx.Clear()           //empty the canvas
 
-		//save canvas state
-		ctx.Push()
-
 		drawRobot(ctx) //draw the robot to the screen
 
 		//display the data to the screen
 		displayData(ctx)
-
-		//restore canvas state
-		ctx.Pop()
 	})
 
 } //end main
@@ -70,18 +65,24 @@ func main() {
 func createArm() {
 	//set the values for the arm
 	kP := 1.25
-	kI := 0.0
+	kI := 0.00 //0.01 for PID
 	kD := 0.07
 	robotArm = NewArm(1.0, 40.0, 159.3, 2, kP, kI, kD, "cim", 0)
 } //end createArm
 
 //Update the arm for drawing purposes
-func updateModel() {
+func updateModel(ctx *canvas.Context) {
 	//move with PID control until the target is reached
-	// robotArm.movePID(ToRadians(135), robotArm.angle, 1)
-	robotArm.movePIDFF(ToRadians(135), robotArm.angle, ToRadians(1))
+	// robotArm.movePID(ToRadians(135), robotArm.angle, ToRadians(1))
+	// robotArm.movePIDFF(ToRadians(135), robotArm.angle, ToRadians(1))
 	// robotArm.voltage = calcFFArm(robotArm)
 	// robotArm.update()
+	goal := Point{1, 1}
+	rad := 100.0
+	ctx.SetColor(colornames.White)
+	ctx.DrawCircle(float64(width)-goal.x*pixelToMeters-rad, goal.y*pixelToMeters+rad, rad)
+	ctx.Fill()
+	robotArm.pointToGoal(goal, ToRadians(1))
 } //end updateModel
 
 //SIMULATOR
@@ -89,31 +90,47 @@ func updateModel() {
 //draw the robot to the display
 //ctx *canvas.Context - responsible for drawing
 func drawRobot(ctx *canvas.Context) {
-	//switch to the arm color
-	colors := robotArm.getColor()
-	ctx.SetRGB255(colors[0], colors[1], colors[2])
+	ctx.Push() //save current state
+
+	//draw the space the arm can be in (configuration space, or c-space)
+	ctx.SetRGBA(1, 1, 1, 0.25) //switch to transparent green
+	ctx.DrawCircle(robotArm.start.x, robotArm.start.y, robotArm.getLengthPxl()+armWidth/2)
+	ctx.Fill() //fill the circle
 
 	//draw the robot arm as lines between the joint points
+	colors := robotArm.getColor()                  //arm color
+	ctx.SetRGB255(colors[0], colors[1], colors[2]) //switch to the arm color
+	ctx.SetLineWidth(armWidth)                     //change to the arm thickness
 	ctx.DrawLine(robotArm.start.x, robotArm.start.y,
 		robotArm.getEndPtPxl().x, robotArm.getEndPtPxl().y)
+	ctx.Stroke() //draw the line
 
-	ctx.Stroke()
+	ctx.Pop() //load last saved state
 } //end drawRobot
 
 //display the parameters of the robot onto the screen
 //ctx *canvas.Context - responsible for drawing
 func displayData(ctx *canvas.Context) {
+	startX := 1200.0 //starting x-coordinate for the text
 	ctx.SetColor(textColor)
 
-	//display the start and end coords
-	displayPointCoords(ctx, robotArm.getStartPtM(), 1400, fontSize)
-	displayPointCoords(ctx, robotArm.getEndPtM(), 1400, 70+fontSize)
+	//draw corner frame
+	y := 350.0
+	ctx.Push()
+	ctx.InvertY()
+	ctx.SetLineWidth(boxThick)
+	ctx.DrawLine(startX-20, 0, startX-20, y+fontSize+20)
+	ctx.DrawLine(startX-20, y+fontSize+20, float64(width), y+fontSize+20)
+	ctx.Stroke()
+	ctx.Pop()
 
-	//display the angle of the arm (combine with point and make into helper function)
-	// drawFloat(ctx, robotArm.angle, 1400, 140+fontSize, "Angle Radians")
-	startX := 1200.0
+	//display the start and end coords
+	displayPointCoords(ctx, robotArm.getStartPtM(), startX, fontSize)
+	displayPointCoords(ctx, robotArm.getEndPtM(), startX, 70+fontSize)
+
+	//display the state + voltage of the arm
 	drawFloat(ctx, robotArm.getAngleDeg(), startX, 140+fontSize, "Angle Degrees")
 	drawFloat(ctx, robotArm.vel, startX, 210+fontSize, "Velocity Rad/s")
 	drawFloat(ctx, robotArm.acc, startX, 280+fontSize, "Acceleration Rad/s")
-	drawFloat(ctx, robotArm.voltage, startX, 350+fontSize, "Voltage volts")
+	drawFloat(ctx, robotArm.voltage, startX, 350+fontSize, "Voltage Volts")
 } //end displayData
