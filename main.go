@@ -6,10 +6,10 @@
 package main
 
 import (
-	"image/color"
-
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
+	"image/color"
+	"time"
 	// "math"
 )
 
@@ -46,8 +46,14 @@ func main() {
 	// createArm()
 	createArm2()
 
+	pause := false
+
 	//create the arm
 	c.Draw(func(ctx *canvas.Context) {
+		if !pause {
+			time.Sleep(time.Millisecond * 0)
+		}
+		pause = true
 		//update the arm
 		updateModel(ctx)
 
