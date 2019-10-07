@@ -99,6 +99,12 @@ func (a Arm) getStartPtM() point {
 	return point{0, 0}
 } //end getStartPtM
 
+//Set the start point of the arm as another point
+//p point - point to set the arm to start at
+func (a *Arm) setStartPt(p point) {
+	a.start = p
+} //end setStartPt
+
 //Get the angle of the arm in degrees
 func (a Arm) getAngleDeg() float64 {
 	return ToDegrees(a.angle)
@@ -150,7 +156,7 @@ func (a *Arm) movePID(setpoint, current, epsilon float64) {
 //float64 current - current angle of the arm
 //float64 epsilon - tolerance for the angle in radians
 func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
-	if robotArm.pid.atTarget && a.vel < a.maxVel*0.1 { //if at target
+	if a.pid.atTarget && a.vel < a.maxVel*0.1 { //if at target
 		a.stopped = true
 	} else { //if not
 		a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1) + calcFFArm(a)
@@ -180,12 +186,12 @@ func (a *Arm) update() {
 		a.vel += a.acc * float64(1.0/float64(fps))
 		a.moveArm(a.vel)
 
-		if (a.angle < 0) || (a.angle > math.Pi) {
-			a.angle = OutputClamp(a.angle, 0, math.Pi)
-			a.voltage = 0
-			a.vel = 0
-			a.acc = 0
-		}
+		// if (a.angle < 0) || (a.angle > math.Pi) {
+		// 	a.angle = OutputClamp(a.angle, 0, math.Pi)
+		// 	a.voltage = 0
+		// 	a.vel = 0
+		// 	a.acc = 0
+		// }
 	}
 
 	// fmt.Println(a.voltage)
@@ -206,8 +212,10 @@ func (a *Arm) stop() {
 //GRAPHICS
 
 //get the speed-proportional color for the arm
-func (a Arm) getColor() [3]int {
-	color := [3]int{0, int(OutputClamp((math.Abs(a.vel)/a.maxVel)*127, 0, 127) + 127), 0} //green
+//int i - indicated whether R, G or B should be the color selected
+func (a Arm) getColor(i int) [3]int {
+	color := [3]int{0, 0, 0}
+	color[i] = int(OutputClamp((math.Abs(a.vel)/a.maxVel)*127, 0, 127) + 127)
 	if a.stopped {
 		color = [3]int{0, 0, 255} //blue
 	}

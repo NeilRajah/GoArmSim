@@ -12,7 +12,7 @@ import (
 //Constants
 
 const g = 9.81            //gravitational constant
-const pixelToMeters = 360 //the number of pixels per 'meter' in the GUI
+const pixelToMeters = 500 //the number of pixels per 'meter' in the GUI
 
 //ToDegrees converts an angle from radians to degrees
 //float64 n - the angle in radians
