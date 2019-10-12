@@ -6,6 +6,7 @@
 package main
 
 import (
+	// "github.com/faiface/pixel"
 	"strconv"
 
 	"github.com/h8gi/canvas"
@@ -30,7 +31,7 @@ func setUpCanvas(ctx *canvas.Context) {
 //point p - endpoint in cartesian space
 //float64 x - x coordinate for the string
 //float64 y - y coordinate for the string
-func displayPointCoords(ctx *canvas.Context, p point, x, y float64) {
+func displayPointCoords(ctx *canvas.Context, p Point, x, y float64) {
 	//show coordinates in (x,y) form
 	coordinates := "(" + strconv.FormatFloat(p.x, 'f', 2, 64) + " , " +
 		strconv.FormatFloat(p.y, 'f', 2, 64) + ")"
@@ -57,3 +58,14 @@ func drawFloat(ctx *canvas.Context, f, x, y float64, s string) {
 
 	ctx.Pop()
 } //end drawString
+
+//draw a point
+func drawPoint(ctx *canvas.Context, p Point, r float64) {
+	ctx.Push()
+
+	// ctx.InvertY()
+	ctx.DrawCircle(p.x*float64(pixelToMeters)+float64(width)/2, p.y*float64(pixelToMeters), r)
+	ctx.Stroke()
+
+	ctx.Pop()
+}

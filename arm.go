@@ -6,6 +6,7 @@
 package main
 
 import (
+	// "github.com/faiface/pixel"
 	// "fmt"
 	"math"
 )
@@ -18,7 +19,7 @@ type Arm struct {
 	gearRatio float64 //gear ratio of the gearbox powering the arm
 
 	//Calculated attributes
-	start   point   //the base point of the arm
+	start   Point   //the base point of the arm
 	angle   float64 //the angle of the arm from the horizontal measured CCW in radians
 	vel     float64 //angular velocity of the arm in radians/second
 	maxVel  float64 //maximum possible velocity of the arm
@@ -50,7 +51,7 @@ func NewArm(length, mass, gearRatio, numMotors, kP, kI, kD float64, motorName st
 	arm := new(Arm)
 
 	//create and add all pre-determined values
-	arm.start = point{float64(width / 2), 0} //center of bottom edge of window
+	arm.start = Point{float64(width / 2), 0} //center of bottom edge of window
 	arm.angle = angle                        //start at specified angle
 	arm.vel = 0                              //start at rest
 	arm.acc = 0                              //start with no acceleration
@@ -79,29 +80,29 @@ func NewArm(length, mass, gearRatio, numMotors, kP, kI, kD float64, motorName st
 //SETTERS AND GETTERS
 
 //Get the end point of the arm in pixels
-func (a Arm) getEndPtPxl() point {
+func (a Arm) getEndPtPxl() Point {
 	endX := a.getLengthPxl()*math.Cos(a.angle) + a.start.x
 	endY := a.getLengthPxl()*math.Sin(a.angle) + a.start.y
 
-	return point{endX, endY}
+	return Point{endX, endY}
 } //end getEndPt
 
 //Get the end point of the arm in meters
-func (a Arm) getEndPtM() point {
-	endX := a.length * math.Cos(a.angle)
-	endY := a.length * math.Sin(a.angle)
+func (a Arm) getEndPtM() Point {
+	endX := a.length*math.Cos(a.angle) + a.getStartPtM().x
+	endY := a.length*math.Sin(a.angle) + a.getStartPtM().y
 
-	return point{endX, endY}
+	return Point{endX, endY}
 } //end getEndPtM
 
 //Get the start point of the arm in meters
-func (a Arm) getStartPtM() point {
-	return point{0, 0}
+func (a Arm) getStartPtM() Point {
+	return Point{(a.start.x - float64(width)/2.0) / pixelToMeters, a.start.y / pixelToMeters}
 } //end getStartPtM
 
 //Set the start point of the arm as another point
 //p point - point to set the arm to start at
-func (a *Arm) setStartPt(p point) {
+func (a *Arm) setStartPt(p Point) {
 	a.start = p
 } //end setStartPt
 
@@ -165,9 +166,9 @@ func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
 } //end movePIDFF
 
 //move the arm to the line formed by a goal point and origin (single-joint IK)
-//point goal - (x,y) point in meters
+//Point goal - (x,y) point in meters
 //float64 tolerance - tolerance for the angle in radians
-func (a *Arm) pointToGoal(goal point, tolerance float64) {
+func (a *Arm) pointToGoal(goal Point, tolerance float64) {
 	angle := math.Atan2(goal.y, goal.x)
 	a.movePIDFF(angle, a.angle, tolerance)
 } //end pointToGoal
@@ -185,13 +186,6 @@ func (a *Arm) update() {
 		a.calcAccel(a.voltage)
 		a.vel += a.acc * float64(1.0/float64(fps))
 		a.moveArm(a.vel)
-
-		// if (a.angle < 0) || (a.angle > math.Pi) {
-		// 	a.angle = OutputClamp(a.angle, 0, math.Pi)
-		// 	a.voltage = 0
-		// 	a.vel = 0
-		// 	a.acc = 0
-		// }
 	}
 
 	// fmt.Println(a.voltage)
@@ -201,7 +195,7 @@ func (a *Arm) update() {
 //float64 angVel - the angular velocity of the arm in radians/second
 func (a *Arm) moveArm(angVel float64) {
 	dtheta := angVel * float64(1.0/float64(fps))
-	a.angle = a.angle + dtheta
+	a.angle += dtheta
 } //end moveArm
 
 //stop the arm by setting the velocity to zero

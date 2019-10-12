@@ -6,11 +6,12 @@
 package main
 
 import (
+	// "fmt"
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
 	"image/color"
-	"time"
 	// "math"
+	"time"
 )
 
 //Constants
@@ -45,6 +46,8 @@ func main() {
 	//create the arm
 	// createArm()
 	createArm2()
+	// fmt.Println(cosLawAngle(robotArm2.arm1.length, robotArm2.arm2.length,
+	// 	PointDistance(robotArm2.arm1.getStartPtM(), robotArm2.arm2.getEndPtM())))
 
 	pause := false
 
@@ -64,8 +67,11 @@ func main() {
 		// drawArm(ctx) //draw the robot to the screen
 		drawArm2(ctx) //draw the 2-jointed arm to the screen
 
+		ctx.SetColor(colornames.White)
+		drawPoint(ctx, Point{.375, 1.0}, 10)
+
 		//display the data to the screen
-		// displayData(ctx)
+		displayData(ctx)
 	})
 
 } //end main
@@ -88,23 +94,19 @@ func createArm2() {
 	a2 := NewArm(0.8, 15.0, 159.3, 1, kP, kI, kD, "cim", 0)
 	robotArm2.arm1 = a1
 	robotArm2.arm2 = a2
+	robotArm2.arm2.start = robotArm2.arm1.getEndPtPxl()
 } //end createArm2
 
 //Update the arm for drawing purposes
 func updateModel(ctx *canvas.Context) {
 	//move with PID control until the target is reached
 	// robotArm.movePID(ToRadians(135), robotArm.angle, ToRadians(1))
-	robotArm2.arm1.movePIDFF(ToRadians(135), robotArm2.arm1.angle, ToRadians(1))
-	robotArm2.arm2.movePIDFF(ToRadians(-10), robotArm2.arm2.angle, ToRadians(1))
+	// robotArm2.arm1.movePIDFF(ToRadians(125), robotArm2.arm1.angle, ToRadians(1))
+	// robotArm2.arm2.movePIDFF(ToRadians(65), robotArm2.arm2.angle, ToRadians(1))
+	robotArm2.moveToPoint(Point{.375, 1.0}, ToRadians(0.1))
+	// robotArm2.arm2.update()
+	// robotArm2.arm2.movePIDFF(ToRadians(120), robotArm2.arm2.angle, ToRadians(1))
 	robotArm2.update()
-	// robotArm.voltage = calcFFArm(robotArm)
-	// robotArm.update()
-	// goal := point{1, 1}
-	// rad := 100.0
-	// ctx.SetColor(colornames.White)
-	// ctx.DrawCircle(float64(width)-goal.x*pixelToMeters-rad, goal.y*pixelToMeters+rad, rad)
-	// ctx.Fill()
-	// robotArm.pointToGoal(goal, ToRadians(1))
 } //end updateModel
 
 //SIMULATOR
@@ -171,12 +173,15 @@ func displayData(ctx *canvas.Context) {
 	ctx.Pop()
 
 	//display the start and end coords
-	displayPointCoords(ctx, robotArm.getStartPtM(), startX, fontSize)
-	displayPointCoords(ctx, robotArm.getEndPtM(), startX, 70+fontSize)
+	displayPointCoords(ctx, robotArm2.arm1.getStartPtM(), startX, fontSize)
+	displayPointCoords(ctx, robotArm2.arm1.getEndPtM(), startX, 70+fontSize)
+	displayPointCoords(ctx, robotArm2.arm2.getStartPtM(), startX, 140+fontSize)
+	displayPointCoords(ctx, robotArm2.arm2.getEndPtM(), startX, 210+fontSize)
 
 	//display the state + voltage of the arm
-	drawFloat(ctx, robotArm.getAngleDeg(), startX, 140+fontSize, "Angle Degrees")
-	drawFloat(ctx, robotArm.vel, startX, 210+fontSize, "Velocity Rad/s")
-	drawFloat(ctx, robotArm.acc, startX, 280+fontSize, "Acceleration Rad/s")
-	drawFloat(ctx, robotArm.voltage, startX, 350+fontSize, "Voltage Volts")
+	drawFloat(ctx, robotArm2.arm1.getAngleDeg(), startX, 280+fontSize, "Angle Degrees")
+	drawFloat(ctx, robotArm2.arm2.getAngleDeg(), startX, 350+fontSize, "Angle Degrees")
+	// drawFloat(ctx, robotArm.vel, startX, 280+fontSize, "Velocity Rad/s")
+	// drawFloat(ctx, robotArm.acc, startX, 350+fontSize, "Acceleration Rad/s")
+	// drawFloat(ctx, robotArm.voltage, startX, 420+fontSize, "Voltage Volts")
 } //end displayData
