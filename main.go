@@ -27,6 +27,7 @@ var robotArm *Arm                           //arm struct
 var robotArm2 Arm2                          //2-jointed arm
 var bgColor color.RGBA = colornames.Black   //background color
 var textColor color.RGBA = colornames.White //text color
+var a1, a2 float64                          //angles to move to
 
 //create the arm struct to be used and run the graphics
 func main() {
@@ -46,6 +47,8 @@ func main() {
 	//create the arm
 	// createArm()
 	createArm2()
+	a1, a2 = InverseKinematics(Point{.375, 1.0}, robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
+
 	// fmt.Println(cosLawAngle(robotArm2.arm1.length, robotArm2.arm2.length,
 	// 	PointDistance(robotArm2.arm1.getStartPtM(), robotArm2.arm2.getEndPtM())))
 
@@ -103,7 +106,8 @@ func updateModel(ctx *canvas.Context) {
 	// robotArm.movePID(ToRadians(135), robotArm.angle, ToRadians(1))
 	// robotArm2.arm1.movePIDFF(ToRadians(125), robotArm2.arm1.angle, ToRadians(1))
 	// robotArm2.arm2.movePIDFF(ToRadians(65), robotArm2.arm2.angle, ToRadians(1))
-	robotArm2.moveToPoint(Point{.375, 1.0}, ToRadians(0.1))
+	robotArm2.arm1.movePIDFF(a1, robotArm2.arm1.angle, ToRadians(1))
+	robotArm2.arm2.movePIDFF(a2, robotArm2.arm2.angle, ToRadians(1))
 	// robotArm2.arm2.update()
 	// robotArm2.arm2.movePIDFF(ToRadians(120), robotArm2.arm2.angle, ToRadians(1))
 	robotArm2.update()
@@ -149,7 +153,7 @@ func drawArm2(ctx *canvas.Context) {
 	ctx.SetRGB255(colors[0], colors[1], colors[2]) //switch to the arm color
 	ctx.SetLineWidth(armWidth)                     //change to the arm thickness
 	ctx.DrawLine(robotArm2.arm2.start.x, robotArm2.arm2.start.y,
-		robotArm2.arm2.getEndPtPxl().x, robotArm2.arm2.getEndPtPxl().y)
+		robotArm2.arm2.get2JEndPtPxl(robotArm2.arm1.angle).x, robotArm2.arm2.get2JEndPtPxl(robotArm2.arm1.angle).y)
 
 	ctx.Stroke() //draw the line
 
@@ -176,7 +180,7 @@ func displayData(ctx *canvas.Context) {
 	displayPointCoords(ctx, robotArm2.arm1.getStartPtM(), startX, fontSize)
 	displayPointCoords(ctx, robotArm2.arm1.getEndPtM(), startX, 70+fontSize)
 	displayPointCoords(ctx, robotArm2.arm2.getStartPtM(), startX, 140+fontSize)
-	displayPointCoords(ctx, robotArm2.arm2.getEndPtM(), startX, 210+fontSize)
+	displayPointCoords(ctx, robotArm2.arm2.get2JEndPtM(robotArm2.arm1.angle), startX, 210+fontSize)
 
 	//display the state + voltage of the arm
 	drawFloat(ctx, robotArm2.arm1.getAngleDeg(), startX, 280+fontSize, "Angle Degrees")

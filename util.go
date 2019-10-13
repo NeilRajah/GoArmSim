@@ -64,3 +64,18 @@ func PointDistance(p1, p2 Point) float64 {
 func cosLawAngle(a, b, c float64) float64 {
 	return math.Acos((a*a + b*b - c*c) / (2 * a * b))
 } //end cosLawAngle
+
+//Check if two points are within the bounds of one another
+//Point target - target to be within
+//Point current - current (x,y) coordinate
+//tolerance float64 - radius of the circle around the target you can be in
+func withinBounds(target, current Point, tolerance float64) bool {
+	xDiff := math.Abs(target.x - current.x)
+	yDiff := math.Abs(target.y - current.y)
+
+	if xDiff < tolerance && yDiff < tolerance {
+		return true
+	} else {
+		return false
+	}
+} //end withinBounds

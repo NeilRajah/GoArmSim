@@ -21,30 +21,26 @@ func (a2 *Arm2) update() {
 	a2.arm2.setStartPt(a2.arm1.getEndPtPxl())
 } //end update
 
-//updates the individual arms
+//updates the individual arms with zero voltage
 func (a2 Arm2) rest() {
 	a2.update()
 	a2.arm1.update()
 	a2.arm2.update()
 } //end rest
 
-func (a2 Arm2) moveToPoint(p Point, tolerance float64) {
-	d := PointDistance(Point{0, 0}, p)
-	// gamma := math.Atan2(p.y, p.x)
-	// alpha := cosLawAngle(a2.arm1.length, d, a2.arm2.length)
-	// beta := cosLawAngle(a2.arm1.length, a2.arm2.length, d)
+func InverseKinematics(p Point, ang1, ang2, a1, a2 float64) (float64, float64) {
+	r := PointDistance(Point{0, 0}, p) //distance from origin to point
 
-	// ang1 := gamma - alpha
-	// ang2 := math.Pi - beta
+	q2a := math.Acos((r*r - a1*a1 - a2*a2) / (2 * a1 * a2))                           //second joint angle
+	q1a := math.Atan2(p.y, p.x) - math.Atan((a2*math.Sin(q2a))/(a1+a2*math.Cos(q2a))) //first joint angle
 
-	// ang1 := gamma + alpha
-	// ang2 := beta - math.Pi
+	q2b := -math.Acos((r*r - a1*a1 - a2*a2) / (2 * a1 * a2))                        //second joint angle
+	q1b := math.Atan(p.y/p.x) - math.Atan((a2*math.Sin(q2b))/(a1+a2*math.Cos(q2b))) //first joint angle
 
-	// fmt.Println(d, ToDegrees(gamma), ToDegrees(alpha), ToDegrees(beta), ToDegrees(ang1), ToDegrees(ang2))
-
-	ang2 := math.Acos((p.x*p.x + p.y*p.y - d*d) / (2 * a2.arm1.length * a2.arm2.length))
-	ang1 := math.Atan(p.y/p.x) - math.Atan((a2.arm2.length*math.Sin(ang2))/(a2.arm1.length+a2.arm2.length*math.Cos(ang2)))
-
-	a2.arm1.movePIDFF(ang1, a2.arm1.angle, tolerance)
-	a2.arm2.movePIDFF(ang2, a2.arm2.angle, tolerance)
-}
+	//determine based on distance travelled
+	if math.Abs(q1a-ang1) < math.Abs(q2a-ang2) && math.Abs(q2a-ang1) < math.Abs(q2b-ang2) {
+		return q1b, q2b
+	} else {
+		return q1a, q2a
+	}
+} //end moveToPoint

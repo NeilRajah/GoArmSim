@@ -95,6 +95,24 @@ func (a Arm) getEndPtM() Point {
 	return Point{endX, endY}
 } //end getEndPtM
 
+//Get the end point of the arm if its a second joint
+//float64 a1 - angle of the first joint of the arm in radians
+func (a Arm) get2JEndPtPxl(a1 float64) Point {
+	endX := a.getLengthPxl()*math.Cos(a1+a.angle) + a.start.x
+	endY := a.getLengthPxl()*math.Sin(a1+a.angle) + a.start.y
+
+	return Point{endX, endY}
+} //end get2JEndPt
+
+//Get the end point of the arm if its a second joint
+//float64 a1 - angle of the first joint of the arm in radians
+func (a Arm) get2JEndPtM(a1 float64) Point {
+	endX := a.length*math.Cos(a1+a.angle) + a.getStartPtM().x
+	endY := a.length*math.Sin(a1+a.angle) + a.getStartPtM().y
+
+	return Point{endX, endY}
+} //end get2JEndPt
+
 //Get the start point of the arm in meters
 func (a Arm) getStartPtM() Point {
 	return Point{(a.start.x - float64(width)/2.0) / pixelToMeters, a.start.y / pixelToMeters}
@@ -115,6 +133,12 @@ func (a Arm) getAngleDeg() float64 {
 func (a Arm) getLengthPxl() float64 {
 	return a.length * pixelToMeters
 } //end getLengthPxl
+
+//Set the angle of the arm in radians
+//float64 newAngle - new angle for the arm
+func (a *Arm) setAngle(newAngle float64) {
+	a.angle = newAngle
+} //end setAngle
 
 //PHYSICS
 
