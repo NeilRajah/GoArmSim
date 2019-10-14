@@ -126,6 +126,7 @@ func updateModel(ctx *canvas.Context) {
 	robotArm2.arm1.movePIDFF(a1, robotArm2.arm1.angle, ToRadians(1))
 	robotArm2.arm2.movePIDFF(a2, robotArm2.arm2.angle, ToRadians(1))
 
+	//remove point robot has already moved to
 	if robotArm2.arm1.stopped && robotArm2.arm2.stopped && len(pts) > 1 {
 		copy(pts[0:], pts[0+1:])      //shift all elements one index
 		pts[len(pts)-1] = Point{0, 0} //give zero value to last element
