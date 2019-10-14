@@ -182,7 +182,7 @@ func (a *Arm) movePID(setpoint, current, epsilon float64) {
 //float64 epsilon - tolerance for the angle in radians
 func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
 	if a.pid.atTarget && a.vel < a.maxVel*0.1 { //if at target
-		a.stopped = true
+		a.stopped = false
 	} else { //if not
 		a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1) + calcFFArm(a)
 	}
@@ -204,8 +204,8 @@ func (a *Arm) update() {
 	a.voltage = OutputClamp(a.voltage, -12, 12)
 
 	if a.stopped {
-		a.acc = 0
-		a.vel = 0
+		// a.acc = 0
+		// a.vel = 0
 	} else {
 		a.calcAccel(a.voltage)
 		a.vel += a.acc * float64(1.0/float64(fps))

@@ -6,11 +6,11 @@
 package main
 
 import (
-	// "fmt"
+	"fmt"
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
 	"image/color"
-	// "math"
+	"math"
 	"time"
 )
 
@@ -28,6 +28,8 @@ var robotArm2 Arm2                          //2-jointed arm
 var bgColor color.RGBA = colornames.Black   //background color
 var textColor color.RGBA = colornames.White //text color
 var a1, a2 float64                          //angles to move to
+var p Point                                 //point to move to
+var pts []Point                             //slice of points to move to
 
 //create the arm struct to be used and run the graphics
 func main() {
@@ -45,12 +47,10 @@ func main() {
 	})
 
 	//create the arm
-	// createArm()
 	createArm2()
-	a1, a2 = InverseKinematics(Point{.375, 1.0}, robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
-
-	// fmt.Println(cosLawAngle(robotArm2.arm1.length, robotArm2.arm2.length,
-	// 	PointDistance(robotArm2.arm1.getStartPtM(), robotArm2.arm2.getEndPtM())))
+	p = Point{-0.5, 0.20}
+	pts = append(pts, p)
+	// a1, a2 = InverseKinematics(p, robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
 
 	pause := false
 
@@ -60,7 +60,12 @@ func main() {
 			time.Sleep(time.Millisecond * 0)
 		}
 		pause = true
+
 		//update the arm
+		//add the current mouse point to the points slice if mouse is pressed
+		if ctx.IsMouseDragged {
+			pts = append(pts, mouseToMeter(Point{ctx.Mouse.X, ctx.Mouse.Y}))
+		} //if
 		updateModel(ctx)
 
 		//clear the canvas
@@ -71,11 +76,15 @@ func main() {
 		drawArm2(ctx) //draw the 2-jointed arm to the screen
 
 		ctx.SetColor(colornames.White)
-		drawPoint(ctx, Point{.375, 1.0}, 10)
+		// drawPoint(ctx, p, 10)
+		for _, p := range pts {
+			drawPoint(ctx, p, 10)
+		}
 
 		//display the data to the screen
 		displayData(ctx)
-	})
+
+	}) //end Draw
 
 } //end main
 
@@ -90,26 +99,39 @@ func createArm() {
 
 //create the two-jointed arm
 func createArm2() {
-	kP := 0.75
+	//PID constants
+	kP := 1.2
 	kI := 0.0
 	kD := 0.07
-	a1 := NewArm(1.0, 30.0, 159.3, 2, kP, kI, kD, "cim", 0)
+
+	//joints 1 and 2
+	a1 := NewArm(1.0, 30.0, 159.3, 2, kP, kI, kD, "cim", math.Pi/3)
 	a2 := NewArm(0.8, 15.0, 159.3, 1, kP, kI, kD, "cim", 0)
 	robotArm2.arm1 = a1
 	robotArm2.arm2 = a2
+
+	//set start of second joint to beginning of first joint
 	robotArm2.arm2.start = robotArm2.arm1.getEndPtPxl()
 } //end createArm2
 
 //Update the arm for drawing purposes
 func updateModel(ctx *canvas.Context) {
-	//move with PID control until the target is reached
-	// robotArm.movePID(ToRadians(135), robotArm.angle, ToRadians(1))
-	// robotArm2.arm1.movePIDFF(ToRadians(125), robotArm2.arm1.angle, ToRadians(1))
-	// robotArm2.arm2.movePIDFF(ToRadians(65), robotArm2.arm2.angle, ToRadians(1))
+	//if points list isn't empty
+	if len(pts) != 0 {
+		a1, a2 = InverseKinematics(pts[0], robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
+		fmt.Println("Updated angle", pts[0].x, pts[0].y)
+	}
+
+	//move with PID Feedback control and Feedforward until at target
 	robotArm2.arm1.movePIDFF(a1, robotArm2.arm1.angle, ToRadians(1))
 	robotArm2.arm2.movePIDFF(a2, robotArm2.arm2.angle, ToRadians(1))
-	// robotArm2.arm2.update()
-	// robotArm2.arm2.movePIDFF(ToRadians(120), robotArm2.arm2.angle, ToRadians(1))
+
+	if robotArm2.arm1.stopped && robotArm2.arm2.stopped && len(pts) > 1 {
+		copy(pts[0:], pts[0+1:])      //shift all elements one index
+		pts[len(pts)-1] = Point{0, 0} //give zero value to last element
+		pts = pts[:len(pts)-1]        //truncate the slice
+	}
+	//check if arm is stopped
 	robotArm2.update()
 } //end updateModel
 
@@ -158,7 +180,7 @@ func drawArm2(ctx *canvas.Context) {
 	ctx.Stroke() //draw the line
 
 	ctx.Pop() //load last saved state
-}
+} //end drawArm2
 
 //display the parameters of the robot onto the screen
 //ctx *canvas.Context - responsible for drawing

@@ -59,13 +59,21 @@ func drawFloat(ctx *canvas.Context, f, x, y float64, s string) {
 	ctx.Pop()
 } //end drawString
 
-//draw a point
+//draw a point to the canvas
+//*canvas.Context ctx - responsible for drawing
+//Point p - point to draw
+//float64 r - radius of circle at point
 func drawPoint(ctx *canvas.Context, p Point, r float64) {
 	ctx.Push()
 
-	// ctx.InvertY()
 	ctx.DrawCircle(p.x*float64(pixelToMeters)+float64(width)/2, p.y*float64(pixelToMeters), r)
 	ctx.Stroke()
 
 	ctx.Pop()
-}
+} //end drawPoint
+
+//convert the mouse coordinates to cartesian coordinates
+//Point mouse - point for the mouse
+func mouseToMeter(mouse Point) Point {
+	return Point{(mouse.x - float64(width)/2) / pixelToMeters, mouse.y / pixelToMeters}
+} //end mouseToMeter
