@@ -181,8 +181,8 @@ func (a *Arm) movePID(setpoint, current, epsilon float64) {
 //float64 current - current angle of the arm
 //float64 epsilon - tolerance for the angle in radians
 func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
-	if a.pid.atTarget && a.vel < a.maxVel*0.1 { //if at target
-		a.stopped = false
+	if a.pid.atTarget && math.Abs(a.vel) < a.maxVel*0.1 { //if at target
+		a.stopped = true
 	} else { //if not
 		a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1) + calcFFArm(a)
 	}
@@ -235,7 +235,7 @@ func (a Arm) getColor(i int) [3]int {
 	color := [3]int{0, 0, 0}
 	color[i] = int(OutputClamp((math.Abs(a.vel)/a.maxVel)*127, 0, 127) + 127)
 	if a.stopped {
-		color = [3]int{0, 0, 255} //blue
+		// color = [3]int{0, 0, 255} //blue
 	}
 	return color
 } //end getColor

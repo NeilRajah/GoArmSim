@@ -30,6 +30,8 @@ var textColor color.RGBA = colornames.White //text color
 var a1, a2 float64                          //angles to move to
 var p Point                                 //point to move to
 var pts []Point                             //slice of points to move to
+var ticker *time.Ticker                     //ticker
+var index int                               //index for point slice
 
 //create the arm struct to be used and run the graphics
 func main() {
@@ -48,42 +50,47 @@ func main() {
 
 	//create the arm
 	createArm2()
-	p = Point{-0.5, 0.20}
-	pts = append(pts, p)
-	// a1, a2 = InverseKinematics(p, robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
 
-	pause := false
+	//create a starting point to move to
+	p = Point{-0.5, 0.5}
+	pts = append(pts, p) //add it to the slice
+	index = 0
+
+	//ticker for printing data
+	ticker = time.NewTicker(time.Millisecond * 500)
+
+	pause := false //whether a delay at beginning should occur
 
 	//create the arm
 	c.Draw(func(ctx *canvas.Context) {
+		//beginning delay
 		if !pause {
 			time.Sleep(time.Millisecond * 0)
 		}
 		pause = true
 
-		//update the arm
 		//add the current mouse point to the points slice if mouse is pressed
 		if ctx.IsMouseDragged {
 			pts = append(pts, mouseToMeter(Point{ctx.Mouse.X, ctx.Mouse.Y}))
 		} //if
-		updateModel(ctx)
+		go updatePoints() //print out the current point coordinates every half second
+
+		updateModel(ctx) //update the arm
 
 		//clear the canvas
 		ctx.SetColor(bgColor) //set the bg color
 		ctx.Clear()           //empty the canvas
 
-		// drawArm(ctx) //draw the robot to the screen
 		drawArm2(ctx) //draw the 2-jointed arm to the screen
 
+		//draw all the points in the slice to the screen
 		ctx.SetColor(colornames.White)
-		// drawPoint(ctx, p, 10)
 		for _, p := range pts {
 			drawPoint(ctx, p, 10)
-		}
+		} //loop
 
 		//display the data to the screen
 		displayData(ctx)
-
 	}) //end Draw
 
 } //end main
@@ -116,11 +123,10 @@ func createArm2() {
 
 //Update the arm for drawing purposes
 func updateModel(ctx *canvas.Context) {
-	//if points list isn't empty
+	//if points list isn't empty, update the joint angles
 	if len(pts) != 0 {
-		a1, a2 = InverseKinematics(pts[0], robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
-		fmt.Println("Updated angle", pts[0].x, pts[0].y)
-	}
+		a1, a2 = InverseKinematics(pts[index], robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
+	} //if
 
 	//move with PID Feedback control and Feedforward until at target
 	robotArm2.arm1.movePIDFF(a1, robotArm2.arm1.angle, ToRadians(1))
@@ -128,15 +134,28 @@ func updateModel(ctx *canvas.Context) {
 
 	//remove point robot has already moved to
 	if robotArm2.arm1.stopped && robotArm2.arm2.stopped && len(pts) > 1 {
-		copy(pts[0:], pts[0+1:])      //shift all elements one index
-		pts[len(pts)-1] = Point{0, 0} //give zero value to last element
-		pts = pts[:len(pts)-1]        //truncate the slice
+		index++
+		// copy(pts[0:], pts[0+1:])      //shift all elements one index
+		// pts[len(pts)-1] = Point{0, 0} //give zero value to last element
+		// pts = pts[:len(pts)-1]        //truncate the slice
 	}
 	//check if arm is stopped
 	robotArm2.update()
 } //end updateModel
 
 //SIMULATOR
+
+//Prints the points to the terminal every half second
+func updatePoints() {
+	for range ticker.C {
+		// fmt.Println("Goal point is", pts[0].x, pts[0].y)
+		// fmt.Println("Error 1 is", ToDegrees(a1-robotArm2.arm1.angle))
+		// fmt.Println("Error 2 is", ToDegrees(a2-robotArm2.arm2.angle))
+		fmt.Println("Setpoint 1", robotArm2.arm1.pid.goal, "a1", a1)
+		fmt.Println("Setpoint 2", robotArm2.arm2.pid.goal, "a2", a2)
+		fmt.Println("Stopped?", robotArm2.arm1.stopped && robotArm2.arm2.stopped)
+	} //loop
+} //end updatePoints
 
 //draw the robot to the display
 //ctx *canvas.Context - responsible for drawing

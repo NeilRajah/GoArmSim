@@ -20,10 +20,10 @@ type Arm2 struct {
 func (a2 *Arm2) update() {
 	a2.arm2.setStartPt(a2.arm1.getEndPtPxl())
 	//if both arms are stopped, unstop them
-	if a2.arm1.stopped && a2.arm2.stopped {
-		a2.arm1.stopped = false
-		a2.arm2.stopped = false
-	} //if
+	// if a2.arm1.stopped && a2.arm2.stopped {
+	// 	a2.arm1.stopped = false
+	// 	a2.arm2.stopped = false
+	// } //if
 } //end update
 
 //updates the individual arms with zero voltage

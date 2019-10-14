@@ -22,6 +22,8 @@ type pidcontroller struct {
 	lastError float64 //last error for derivative calculation
 	epsilon   float64 //the range to be in to be considered "at goal"
 	atTarget  bool    //whether within epsilon bounds
+
+	goal float64 //goal controller is trying to reach
 } //end struct
 
 //calculate the PID output based on the setpoint, current value and tolerance
@@ -29,8 +31,9 @@ type pidcontroller struct {
 //float64 current - the current value
 //float64 epsilon - the range you can be in to be considered "at goal"
 func (pid *pidcontroller) calcPID(setpoint, current, epsilon float64) float64 {
+	pid.goal = setpoint
 	//get the error
-	error := setpoint - current
+	error := pid.goal - current
 
 	//update atTarget
 	pid.atTarget = math.Abs(error) <= epsilon
