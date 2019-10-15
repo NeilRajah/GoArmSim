@@ -80,7 +80,7 @@ func createArm2() {
 
 	//joints 1 and 2
 	a1 := NewArm(1.0, 30.0, 159.3, 2, kP1, kI1, kD1, "cim", 0)
-	a2 := NewArm(0.8, 15.0, 129.3, 1, kP2, kI2, kD2, "cim", 0)
+	a2 := NewArm(0.8, 15.0, 159.3, 1, kP2, kI2, kD2, "cim", 0)
 	robotArm2.arm1 = a1
 	robotArm2.arm2 = a2
 
