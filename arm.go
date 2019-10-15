@@ -167,8 +167,11 @@ func (a *Arm) setOutput(percent float64) {
 } //end setOutput
 
 //drive the arm using PID control
+//float64 setpoint - goal angle to move to
+//float64 current - current angle of the arm
+//float64 epsilon - tolerance for the angle in radians
 func (a *Arm) movePID(setpoint, current, epsilon float64) {
-	if robotArm.pid.atTarget && math.Abs(a.vel) < a.maxVel*0.1 { //if at target
+	if a.pid.atTarget && math.Abs(a.vel) < a.maxVel*0.1 { //if at target
 		a.stopped = true
 	} else { //if not
 		a.voltage = MaxVoltage * OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1)
@@ -201,26 +204,13 @@ func (a *Arm) pointToGoal(goal Point, tolerance float64) {
 
 //update the coordinates of the endpoint based on the angle
 func (a *Arm) update() {
-	a.voltage = OutputClamp(a.voltage, -12, 12)
+	a.voltage = OutputClamp(a.voltage, -12, 12) //clamp the voltage to min and max
 
-	if a.stopped {
-		// a.acc = 0
-		// a.vel = 0
-	} else {
-		a.calcAccel(a.voltage)
-		a.vel += a.acc * float64(1.0/float64(fps))
-		a.moveArm(a.vel)
-	}
-
-	// fmt.Println(a.voltage)
+	//calculate acceleration and "integrate" for vel and pos
+	a.calcAccel(a.voltage)
+	a.vel += a.acc * dt
+	a.angle += a.vel * dt
 } //end update
-
-//move the arm with a given speed
-//float64 angVel - the angular velocity of the arm in radians/second
-func (a *Arm) moveArm(angVel float64) {
-	dtheta := angVel * float64(1.0/float64(fps))
-	a.angle += dtheta
-} //end moveArm
 
 //stop the arm by setting the velocity to zero
 func (a *Arm) stop() {
@@ -235,7 +225,7 @@ func (a Arm) getColor(i int) [3]int {
 	color := [3]int{0, 0, 0}
 	color[i] = int(OutputClamp((math.Abs(a.vel)/a.maxVel)*127, 0, 127) + 127)
 	if a.stopped {
-		// color = [3]int{0, 0, 255} //blue
+		color = [3]int{0, 0, 255} //blue
 	}
 	return color
 } //end getColor
