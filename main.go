@@ -12,7 +12,7 @@ import (
 	"golang.org/x/image/colornames"
 	"image/color"
 	// "math"
-	// "time"
+	"time"
 )
 
 //Constants
@@ -49,8 +49,17 @@ func main() {
 	createArm2()
 
 	//create a starting point to move to
-	p = Point{0.5, 0.9}
+	p = Point{0.75, 1.25}
 	a1, a2 = InverseKinematics(p, robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
+
+	t := time.NewTimer(time.Second * 3)
+
+	go func() {
+		<-t.C
+		// fmt.Println("Point switching")
+		p = Point{-1.0, 1.2}
+		a1, a2 = InverseKinematics(p, robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
+	}()
 
 	//create the arm
 	c.Draw(func(ctx *canvas.Context) { draw(ctx) }) //end Draw
@@ -74,15 +83,15 @@ func createArm2() {
 	kI1 := 0.0
 	kD1 := 0.04
 
-	kP2 := 1.50
+	kP2 := 1.75
 	kI2 := 0.0
-	kD2 := 0.08
+	kD2 := 0.02
 
 	//joints 1 and 2
-	a1 := NewArm(1.0, 30.0, 159.3, 2, kP1, kI1, kD1, "cim", 0)
-	a2 := NewArm(0.8, 15.0, 159.3, 1, kP2, kI2, kD2, "cim", 0)
-	robotArm2.arm1 = a1
-	robotArm2.arm2 = a2
+	joint1 := NewArm(1.0, 30.0, 159.3, 2, kP1, kI1, kD1, "cim", 0)
+	joint2 := NewArm(0.8, 15.0, 159.3, 1, kP2, kI2, kD2, "cim", 0)
+	robotArm2.arm1 = joint1
+	robotArm2.arm2 = joint2
 
 	//set start of second joint to beginning of first joint
 	robotArm2.arm2.start = robotArm2.arm1.getEndPtPxl()
@@ -93,6 +102,8 @@ func updateModel(ctx *canvas.Context) {
 	//move with PID Feedback control and Feedforward until at target
 	robotArm2.arm1.movePIDFF(a1, robotArm2.arm1.angle, ToRadians(1))
 	robotArm2.arm2.movePIDFF(a2, robotArm2.arm2.angle, ToRadians(1))
+
+	// fmt.Println(a1, a2)
 
 	robotArm2.update() //update the arm
 } //end updateModel

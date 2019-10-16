@@ -186,9 +186,11 @@ func (a *Arm) movePID(setpoint, current, epsilon float64) {
 func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
 	if a.pid.atTarget && math.Abs(a.vel) < a.maxVel*0.1 { //if at target
 		a.stopped = true
-	} else { //if not
-		a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1) + calcFFArm(a)
+	} else {
+		a.stopped = false
 	}
+	a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1) + calcFFArm(a)
+
 	a.update()
 } //end movePIDFF
 
@@ -206,10 +208,15 @@ func (a *Arm) pointToGoal(goal Point, tolerance float64) {
 func (a *Arm) update() {
 	a.voltage = OutputClamp(a.voltage, -12, 12) //clamp the voltage to min and max
 
+	// if a.stopped {
+	// 	a.acc = 0
+	// 	a.vel = 0
+	// } else {
 	//calculate acceleration and "integrate" for vel and pos
 	a.calcAccel(a.voltage)
 	a.vel += a.acc * dt
 	a.angle += a.vel * dt
+	// }
 } //end update
 
 //stop the arm by setting the velocity to zero
