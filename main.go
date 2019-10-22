@@ -19,7 +19,7 @@ import (
 
 const width int = 1920                //WIDTH is the width of the window
 const height int = 1080               //HEIGHT is the height of the window
-const fps int = 100                   //FPS is the frame rate of the animation
+const fps int = 50                    //FPS is the frame rate of the animation
 const dt float64 = 1.0 / float64(fps) //timestamp duration
 const fontSize float64 = 60           //FONT_SIZE is the font size for the canvas
 
@@ -52,7 +52,7 @@ func main() {
 	p = Point{0.75, 1.25}
 	a1, a2 = InverseKinematics(p, robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
 
-	t := time.NewTimer(time.Second * 3)
+	t := time.NewTimer(time.Millisecond * 1500)
 
 	go func() {
 		<-t.C
@@ -62,7 +62,10 @@ func main() {
 	}()
 
 	//create the arm
-	c.Draw(func(ctx *canvas.Context) { draw(ctx) }) //end Draw
+	c.Draw(func(ctx *canvas.Context) {
+		go updateModel(ctx)
+		draw(ctx)
+	}) //end Draw
 } //end main
 
 //MODEL
@@ -119,8 +122,7 @@ func draw(ctx *canvas.Context) {
 
 	drawCSpace(ctx) //draw the configuration space of the arm
 
-	updateModel(ctx) //update the arm
-	drawArm2(ctx)    //draw the 2-jointed arm to the screen
+	drawArm2(ctx) //draw the 2-jointed arm to the screen
 
 	//display the data to the screen
 	// displayData(ctx)
