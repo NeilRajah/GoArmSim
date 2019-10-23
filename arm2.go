@@ -29,6 +29,12 @@ func (a2 Arm2) rest() {
 	a2.arm2.update()
 } //end rest
 
+//Set the color for both arms
+func (a2 *Arm2) setArmColors(color [3]int) {
+	a2.arm1.color = color
+	a2.arm2.color = color
+} //end setArmColors
+
 //InverseKinematics calculates the joint angles given an endpoint
 //Point p - endpoint in Cartesian space
 //float64 ang1 - current angle of first joint

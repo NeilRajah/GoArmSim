@@ -6,8 +6,8 @@
 package main
 
 import (
-	// "fmt"
-	// "github.com/faiface/pixel"
+	"fmt"
+	// "github.com/faiface/pixel/pixelgl"
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
 	"image/color"
@@ -24,13 +24,17 @@ const dt float64 = 1.0 / float64(fps) //timestamp duration
 const fontSize float64 = 60           //FONT_SIZE is the font size for the canvas
 
 //variables
-var c canvas.Canvas                         //canvas instance
-var robotArm *Arm                           //arm struct
-var robotArm2 Arm2                          //2-jointed arm
 var bgColor color.RGBA = colornames.Black   //background color
 var textColor color.RGBA = colornames.White //text color
-var a1, a2 float64                          //angles to move to
-var p Point                                 //point to move to
+var c canvas.Canvas                         //canvas instance
+
+var robotArm *Arm   //arm struct
+var robotArm2 Arm2  //2-jointed arm
+var armloop ArmLoop //state machine for the arm
+
+var pts []Point   //points to move to
+var canAdd bool   //whether a point can be added to the set or not
+var t *time.Timer //timer for the arm
 
 //create the arm struct to be used and run the graphics
 func main() {
@@ -48,24 +52,14 @@ func main() {
 	//create the arm
 	createArm2()
 
-	//create a starting point to move to
-	p = Point{0.75, 1.25}
-	a1, a2 = InverseKinematics(p, robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
+	canAdd = true //can add mouse points
 
-	t := time.NewTimer(time.Millisecond * 1500)
-
-	go func() {
-		<-t.C
-		// fmt.Println("Point switching")
-		p = Point{-1.0, 1.2}
-		a1, a2 = InverseKinematics(p, robotArm2.arm1.angle, robotArm2.arm2.angle, robotArm2.arm1.length, robotArm2.arm2.length)
-	}()
-
-	//create the arm
+	//draw to the canvas
 	c.Draw(func(ctx *canvas.Context) {
-		go updateModel(ctx)
+		updateGoal(ctx)
+		updateModel()
 		draw(ctx)
-	}) //end Draw
+	})
 } //end main
 
 //MODEL
@@ -98,17 +92,49 @@ func createArm2() {
 
 	//set start of second joint to beginning of first joint
 	robotArm2.arm2.start = robotArm2.arm1.getEndPtPxl()
+
+	//state machine for the arm
+	armloop = ArmLoop{arm2: robotArm2, state: waiting}
 } //end createArm2
 
+//add the mouse click coordinates as points for the arm
+//*canvas.Context ctx - used for drawing
+func updateGoal(ctx *canvas.Context) {
+	//add points with mouse click
+	if canAdd { //if the timer isn't running
+		if ctx.IsMouseDragged {
+			pts = append(pts, mouseToCartesian(ctx.Mouse))
+
+			//canAdd and the Timer are used to prevent multiple points be added during one click
+			canAdd = false
+			t = time.NewTimer(time.Millisecond * time.Duration(250))
+		} //if
+	} else {
+		go func() {
+			<-t.C         //blocks until finished
+			canAdd = true //let user add a point again
+		}()
+	} //if
+
+	//set goal
+	if len(pts) != 0 { //if lists isn't empty
+		if pts[len(pts)-1] != armloop.goal && armloop.state != goalTracking { //if last point in list isn't already the goal and the arm is finished
+			armloop.setGoal(pts[len(pts)-1])
+			fmt.Println("goal:", armloop.goal.x, armloop.goal.y)
+		} //if
+	} //if
+} //end updateGoal
+
 //Update the arm for drawing purposes
-func updateModel(ctx *canvas.Context) {
-	//move with PID Feedback control and Feedforward until at target
-	robotArm2.arm1.movePIDFF(a1, robotArm2.arm1.angle, ToRadians(1))
-	robotArm2.arm2.movePIDFF(a2, robotArm2.arm2.angle, ToRadians(1))
+func updateModel() {
+	//update the state for the state machine
+	if robotArm2.arm1.stopped && robotArm2.arm2.stopped { //if both joints are stopped
+		armloop.setState(finished)
+	} else if len(pts) != 0 { //if pts slice isn't empty
+		armloop.setState(goalTracking)
+	} //if
 
-	// fmt.Println(a1, a2)
-
-	robotArm2.update() //update the arm
+	armloop.onLoop()
 } //end updateModel
 
 //DRAWING
@@ -127,9 +153,13 @@ func draw(ctx *canvas.Context) {
 	//display the data to the screen
 	// displayData(ctx)
 
-	//draw the point
-	ctx.SetColor(colornames.White)
-	drawPoint(ctx, p, 5)
+	//draw all the points the robot can move to
+	drawPoints(ctx)
+
+	//print the arm's state to the screen
+	ctx.InvertY()
+	ctx.DrawString(armloop.state.String(), 1400, 200)
+	ctx.InvertY()
 } //end draw
 
 //draw the robot to the display
@@ -176,6 +206,34 @@ func drawArm2(ctx *canvas.Context) {
 	ctx.Pop() //load last saved state
 } //end drawArm2
 
+//draw the configuration space of the arm
+//ctx *canvas.Context - responsible for drawing
+func drawCSpace(ctx *canvas.Context) {
+	ctx.Push()
+
+	ctx.SetRGBA(0, 1, 0, 0.33)
+	ctx.DrawCircle(float64(width)/2, 0, (robotArm2.arm1.length+robotArm2.arm2.length)*pixelToMeters)
+	ctx.Fill()
+
+	ctx.SetColor(colornames.Black)
+	ctx.DrawCircle(float64(width)/2, 0, (robotArm2.arm1.length-robotArm2.arm2.length)*pixelToMeters)
+	ctx.Fill()
+
+	ctx.Pop()
+} //end drawCSpace
+
+//Draw all the points in the list the robot can move to
+//ctx *canvas.Context - responsible for drawing
+func drawPoints(ctx *canvas.Context) {
+	//change the color
+	ctx.SetColor(colornames.White)
+
+	//iterate through list and draw points
+	for _, pt := range pts {
+		drawPoint(ctx, pt, 10)
+	} //loop
+} //end drawPoints
+
 //display the parameters of the robot onto the screen
 //ctx *canvas.Context - responsible for drawing
 func displayData(ctx *canvas.Context) {
@@ -205,19 +263,3 @@ func displayData(ctx *canvas.Context) {
 	// drawFloat(ctx, robotArm.acc, startX, 350+fontSize, "Acceleration Rad/s")
 	// drawFloat(ctx, robotArm.voltage, startX, 420+fontSize, "Voltage Volts")
 } //end displayData
-
-//draw the configuration space of the arm
-//ctx *canvas.Context - responsible for drawing
-func drawCSpace(ctx *canvas.Context) {
-	ctx.Push()
-
-	ctx.SetRGBA(0, 1, 0, 0.33)
-	ctx.DrawCircle(float64(width)/2, 0, (robotArm2.arm1.length+robotArm2.arm2.length)*pixelToMeters)
-	ctx.Fill()
-
-	ctx.SetColor(colornames.Black)
-	ctx.DrawCircle(float64(width)/2, 0, (robotArm2.arm1.length-robotArm2.arm2.length)*pixelToMeters)
-	ctx.Fill()
-
-	ctx.Pop()
-} //end drawCSpace

@@ -34,6 +34,8 @@ type Arm struct {
 	motor Motor         //motor controlling the arm
 
 	stopped bool //whether the arm is stopped or not
+
+	color [3]int //array for color
 } //end struct
 
 //NewArm creates a new arm given configurable parameters
@@ -154,7 +156,7 @@ func (a *Arm) calcAccel(output float64) {
 	velConst := (a.kT * a.gearRatio * a.gearRatio) / (a.motor.kV * a.motor.kResistance * a.moi) //proportional to velocity
 	torqGrav := a.calcGravTorque()                                                              //mgrcosA
 
-	a.acc = (output)*voltConst - a.vel*velConst - torqGrav/a.moi
+	a.acc = output*voltConst - a.vel*velConst - torqGrav/a.moi
 } //end calcAccel
 
 //MOTION
@@ -184,14 +186,15 @@ func (a *Arm) movePID(setpoint, current, epsilon float64) {
 //float64 current - current angle of the arm
 //float64 epsilon - tolerance for the angle in radians
 func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
+	a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1) + calcFFArm(a)
+
+	a.update()
+
 	if a.pid.atTarget && math.Abs(a.vel) < a.maxVel*0.1 { //if at target
 		a.stopped = true
 	} else {
 		a.stopped = false
 	}
-	a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1) + calcFFArm(a)
-
-	a.update()
 } //end movePIDFF
 
 //move the arm to the line formed by a goal point and origin (single-joint IK)
@@ -208,15 +211,10 @@ func (a *Arm) pointToGoal(goal Point, tolerance float64) {
 func (a *Arm) update() {
 	a.voltage = OutputClamp(a.voltage, -12, 12) //clamp the voltage to min and max
 
-	// if a.stopped {
-	// 	a.acc = 0
-	// 	a.vel = 0
-	// } else {
-	//calculate acceleration and "integrate" for vel and pos
+	//update acceleration, velocity and position
 	a.calcAccel(a.voltage)
 	a.vel += a.acc * dt
 	a.angle += a.vel * dt
-	// }
 } //end update
 
 //stop the arm by setting the velocity to zero
@@ -226,13 +224,16 @@ func (a *Arm) stop() {
 
 //GRAPHICS
 
-//get the speed-proportional color for the arm
-//int i - indicated whether R, G or B should be the color selected
+//Get the color of the arm
 func (a Arm) getColor(i int) [3]int {
+	return a.color
+} //end getColor
+
+//Calculate the speed-proportional color for the arm
+//int i - indicated whether R, G or B should be the color selected
+func (a Arm) CalcColor(i int) [3]int {
 	color := [3]int{0, 0, 0}
 	color[i] = int(OutputClamp((math.Abs(a.vel)/a.maxVel)*127, 0, 127) + 127)
-	if a.stopped {
-		color = [3]int{0, 0, 255} //blue
-	}
+
 	return color
-} //end getColor
+} //end calcColor

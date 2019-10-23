@@ -6,6 +6,8 @@
 package main
 
 import (
+	"github.com/faiface/pixel"
+	// "github.com/h8gi/canvas"
 	"math"
 )
 
@@ -75,7 +77,20 @@ func withinBounds(target, current Point, tolerance float64) bool {
 
 	if xDiff < tolerance && yDiff < tolerance {
 		return true
-	} else {
-		return false
 	}
+	return false
+
 } //end withinBounds
+
+//Scale a point by a value
+//Point p - point to scale
+//float64 scale - value to scale the coordinates of the point by
+//return - scaled point
+func scalePoint(p Point, scale float64) Point {
+	return Point{p.x * scale, p.y * scale}
+} //end scalePoint
+
+//Convert a mouse point to a cartesian point the arm can move to
+func mouseToCartesian(m pixel.Vec) Point {
+	return scalePoint(Point{m.X - float64(width)/2, m.Y}, 1.0/float64(pixelToMeters))
+} //end MouseToCartesian
