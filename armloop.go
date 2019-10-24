@@ -6,9 +6,13 @@
 package main
 
 import (
-	"fmt"
-	"time"
+// "fmt"
+// "time"
 )
+
+//Colors
+var yellow [3]int = [3]int{255, 255, 0} //yellow
+var blue [3]int = [3]int{0, 0, 255}     //blue
 
 //State represents the state the arm can be in
 type State int
@@ -40,12 +44,11 @@ func (loop *ArmLoop) setState(s State) {
 func (loop *ArmLoop) onLoop() {
 	switch loop.state {
 	case waiting:
-		color := [3]int{255, 255, 0} //yellow
-		loop.arm2.setArmColors(color)
+		loop.arm2.setArmColors(yellow) //yellow for waiting
 		break
 
 	case goalTracking:
-		//proportional green
+		//proportional green for tracking
 		color1 := loop.arm2.arm1.CalcColor(1)
 		loop.arm2.arm1.color = color1
 		color2 := loop.arm2.arm2.CalcColor(1)
@@ -64,28 +67,28 @@ func (loop *ArmLoop) onLoop() {
 		break
 
 	case finished:
-		color := [3]int{0, 0, 255} //blue
-		loop.arm2.setArmColors(color)
+		loop.arm2.setArmColors(blue) //blue for finished
 
-		p := loop.goal
-		t := time.NewTimer(time.Millisecond * 1000)
-		go func() {
-			<-t.C
-			fmt.Println("completed finished delay")
-			if loop.goal != p { //if goal is same after the delay
-				loop.state = goalTracking
-			} else {
-				loop.state = finished
-			} //if
-			return
-		}()
+		// p := loop.goal
+		// t := time.NewTimer(time.Millisecond * 1000)
+		// go func() {
+		// 	<-t.C
+		// 	if loop.goal != p { //if goal is same after the delay
+		// 		loop.state = finished
+		// 	} else {
+		// 		loop.state = goalTracking
+		// 	} //if
+		// 	return
+		// }()
 		break
 	} //switch
 } //end onLoop
 
+//Set the goal point for the state machine
+//Point p - new point to be the goal for the state machine
 func (loop *ArmLoop) setGoal(p Point) {
 	loop.goal = p
 	loop.state = goalTracking
 	loop.arm2.arm1.stopped = false
 	loop.arm2.arm2.stopped = false
-}
+} //end setGoal

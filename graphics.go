@@ -67,7 +67,7 @@ func drawPoint(ctx *canvas.Context, p Point, r float64) {
 	ctx.Push()
 
 	ctx.DrawCircle(p.x*float64(pixelToMeters)+float64(width)/2, p.y*float64(pixelToMeters), r)
-	ctx.Stroke()
+	ctx.Fill()
 
 	ctx.Pop()
 } //end drawPoint

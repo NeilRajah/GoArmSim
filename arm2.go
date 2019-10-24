@@ -30,10 +30,17 @@ func (a2 Arm2) rest() {
 } //end rest
 
 //Set the color for both arms
+//[3]int color - RGB values for the slice
 func (a2 *Arm2) setArmColors(color [3]int) {
 	a2.arm1.color = color
 	a2.arm2.color = color
 } //end setArmColors
+
+//Check if the arm is stopped
+//return - whether both joints are stopped
+func (a2 Arm2) isStopped() bool {
+	return a2.arm1.stopped && a2.arm2.stopped
+} //end isStopped
 
 //InverseKinematics calculates the joint angles given an endpoint
 //Point p - endpoint in Cartesian space

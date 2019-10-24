@@ -7,11 +7,9 @@ package main
 
 import (
 	"fmt"
-	// "github.com/faiface/pixel/pixelgl"
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
 	"image/color"
-	// "math"
 	"time"
 )
 
@@ -24,9 +22,14 @@ const dt float64 = 1.0 / float64(fps) //timestamp duration
 const fontSize float64 = 60           //FONT_SIZE is the font size for the canvas
 
 //variables
-var bgColor color.RGBA = colornames.Black   //background color
-var textColor color.RGBA = colornames.White //text color
-var c canvas.Canvas                         //canvas instance
+var bgColor color.RGBA = colornames.Black            //background color
+var textColor color.RGBA = colornames.White          //text color
+var cspaceColor []float64 = []float64{0, 1, 0, 0.25} //configuration space color
+var ghostColor []float64 = []float64{1, 0, 0, 0.25}  //ghost point color
+var pointIndex int = 0                               //increasing index for drawing points
+var goalIndex int = 0                                //increasing index for setting goal point
+var c canvas.Canvas                                  //canvas instance
+var ghost Point                                      //ghost point to draw
 
 var robotArm *Arm   //arm struct
 var robotArm2 Arm2  //2-jointed arm
@@ -100,16 +103,21 @@ func createArm2() {
 //add the mouse click coordinates as points for the arm
 //*canvas.Context ctx - used for drawing
 func updateGoal(ctx *canvas.Context) {
+	ghost = scalePoint(Point{ctx.Mouse.X - float64(width)/2, ctx.Mouse.Y}, 1.0/float64(pixelToMeters))
+	ghost = ClampToCSpace(ghost, robotArm2.arm1.length, robotArm2.arm2.length) //clamp it to c-space
+
 	//add points with mouse click
-	if canAdd { //if the timer isn't running
-		if ctx.IsMouseDragged {
-			pts = append(pts, mouseToCartesian(ctx.Mouse))
+	if canAdd { //if user can add points
+		if ctx.IsMouseDragged { //mouse click
+			pts = append(pts, ghost) //add it to the list of goals
+			fmt.Println("goal:", ghost.x, ghost.y)
 
 			//canAdd and the Timer are used to prevent multiple points be added during one click
 			canAdd = false
 			t = time.NewTimer(time.Millisecond * time.Duration(250))
 		} //if
 	} else {
+		//wait for timer's duration until the user can add points again
 		go func() {
 			<-t.C         //blocks until finished
 			canAdd = true //let user add a point again
@@ -118,9 +126,8 @@ func updateGoal(ctx *canvas.Context) {
 
 	//set goal
 	if len(pts) != 0 { //if lists isn't empty
-		if pts[len(pts)-1] != armloop.goal && armloop.state != goalTracking { //if last point in list isn't already the goal and the arm is finished
-			armloop.setGoal(pts[len(pts)-1])
-			fmt.Println("goal:", armloop.goal.x, armloop.goal.y)
+		if pts[pointIndex] != armloop.goal && armloop.state != goalTracking { //if last point in list isn't already the goal and the arm is finished
+			armloop.setGoal(pts[pointIndex]) //set the next point as the arm's goal
 		} //if
 	} //if
 } //end updateGoal
@@ -128,13 +135,16 @@ func updateGoal(ctx *canvas.Context) {
 //Update the arm for drawing purposes
 func updateModel() {
 	//update the state for the state machine
-	if robotArm2.arm1.stopped && robotArm2.arm2.stopped { //if both joints are stopped
-		armloop.setState(finished)
-	} else if len(pts) != 0 { //if pts slice isn't empty
-		armloop.setState(goalTracking)
+	if robotArm2.isStopped() { //if both joints are stopped and there is another goal
+		armloop.setState(finished)   //set the state to finished
+		if len(pts)-1 > pointIndex { //if there is another point to move to
+			pointIndex++
+		} //if
+	} else if pointIndex > len(pts) { //if there is a point in sequence
+		armloop.setState(goalTracking) //start moving to the point
 	} //if
 
-	armloop.onLoop()
+	armloop.onLoop() //move the arm
 } //end updateModel
 
 //DRAWING
@@ -146,20 +156,11 @@ func draw(ctx *canvas.Context) {
 	ctx.SetColor(bgColor) //set the bg color
 	ctx.Clear()           //empty the canvas
 
-	drawCSpace(ctx) //draw the configuration space of the arm
-
-	drawArm2(ctx) //draw the 2-jointed arm to the screen
-
-	//display the data to the screen
-	// displayData(ctx)
-
-	//draw all the points the robot can move to
-	drawPoints(ctx)
-
-	//print the arm's state to the screen
-	ctx.InvertY()
-	ctx.DrawString(armloop.state.String(), 1400, 200)
-	ctx.InvertY()
+	drawCSpace(ctx)  //draw the configuration space of the arm
+	drawPoints(ctx)  //draw all the points the robot can move to
+	drawGhost(ctx)   //draw a point based on mouse location to show potential goal
+	displayData(ctx) //display the data to the screen
+	drawArm2(ctx)    //draw the 2-jointed arm to the screen
 } //end draw
 
 //draw the robot to the display
@@ -211,55 +212,77 @@ func drawArm2(ctx *canvas.Context) {
 func drawCSpace(ctx *canvas.Context) {
 	ctx.Push()
 
-	ctx.SetRGBA(0, 1, 0, 0.33)
-	ctx.DrawCircle(float64(width)/2, 0, (robotArm2.arm1.length+robotArm2.arm2.length)*pixelToMeters)
+	ctx.SetRGBA(cspaceColor[0], cspaceColor[1], cspaceColor[2], cspaceColor[3])                      //transparent green
+	ctx.DrawCircle(float64(width)/2, 0, (robotArm2.arm1.length+robotArm2.arm2.length)*pixelToMeters) //outer limit
 	ctx.Fill()
 
-	ctx.SetColor(colornames.Black)
-	ctx.DrawCircle(float64(width)/2, 0, (robotArm2.arm1.length-robotArm2.arm2.length)*pixelToMeters)
+	ctx.SetColor(bgColor)
+	ctx.DrawCircle(float64(width)/2, 0, (robotArm2.arm1.length-robotArm2.arm2.length)*pixelToMeters) //inside limit
 	ctx.Fill()
 
 	ctx.Pop()
 } //end drawCSpace
 
+//Draw a point around where the mouse is to show where the potential goal would be
+//*canvas.Context ctx - responsible for drawing
+func drawGhost(ctx *canvas.Context) {
+	ctx.Push()
+
+	ctx.SetRGBA(ghostColor[0], ghostColor[1], ghostColor[2], ghostColor[3]) //transparent red
+
+	// p := scalePoint(ghost, 1.0/pixelToMeters)
+	// p = ClampToCSpace(p, robotArm2.arm1.length, robotArm2.arm2.length)
+	// drawPoint(ctx, p, 30)
+	drawPoint(ctx, ghost, 30)
+
+	ctx.Pop()
+} //end drawGhost
+
 //Draw all the points in the list the robot can move to
 //ctx *canvas.Context - responsible for drawing
 func drawPoints(ctx *canvas.Context) {
-	//change the color
-	ctx.SetColor(colornames.White)
-
 	//iterate through list and draw points
-	for _, pt := range pts {
-		drawPoint(ctx, pt, 10)
+	start := pointIndex                                    //don't draw the points the arm has moved to
+	if len(pts)-1 == pointIndex && robotArm2.isStopped() { //if the arm is stopped and there is no goal
+		start++ //don't draw the point its at as well
+	} //if
+
+	factor := 0.0
+	if len(pts) == start {
+		factor = 0.0
+	} else {
+		factor = 0.75 / float64((len(pts) - start)) //multiply factor by index
+	}
+
+	//loop through all the points to move to and draw them
+	for i := start; i < len(pts); i++ {
+		// val := float64(255 - factor*(i-start))
+		val := 1.0 - (factor * float64((i - start)))
+		ctx.SetRGBA(1, 0, 0, val)
+		drawPoint(ctx, pts[i], 30)
 	} //loop
 } //end drawPoints
 
 //display the parameters of the robot onto the screen
 //ctx *canvas.Context - responsible for drawing
 func displayData(ctx *canvas.Context) {
-	startX := 1200.0 //starting x-coordinate for the text
-	ctx.SetColor(textColor)
-
-	//draw corner frame
-	y := 350.0
 	ctx.Push()
+
 	ctx.InvertY()
-	ctx.SetLineWidth(boxThick)
-	ctx.DrawLine(startX-20, 0, startX-20, y+fontSize+20)
-	ctx.DrawLine(startX-20, y+fontSize+20, float64(width), y+fontSize+20)
-	ctx.Stroke()
+	//change text color based on state
+	switch armloop.state {
+	case waiting:
+		ctx.SetColor(colornames.Yellow)
+		break
+	case goalTracking:
+		ctx.SetColor(colornames.Green)
+		break
+	case finished:
+		ctx.SetColor(colornames.Blue)
+		break
+	} //switch
+	ctx.DrawString(armloop.state.String(), 1400, 200)
+	ctx.InvertY()
+
 	ctx.Pop()
-
-	//display the start and end coords
-	displayPointCoords(ctx, robotArm2.arm1.getStartPtM(), startX, fontSize)
-	displayPointCoords(ctx, robotArm2.arm1.getEndPtM(), startX, 70+fontSize)
-	displayPointCoords(ctx, robotArm2.arm2.getStartPtM(), startX, 140+fontSize)
-	displayPointCoords(ctx, robotArm2.arm2.get2JEndPtM(robotArm2.arm1.angle), startX, 210+fontSize)
-
-	//display the state + voltage of the arm
-	drawFloat(ctx, robotArm2.arm1.getAngleDeg(), startX, 280+fontSize, "Angle Degrees")
-	drawFloat(ctx, robotArm2.arm2.getAngleDeg(), startX, 350+fontSize, "Angle Degrees")
-	// drawFloat(ctx, robotArm.vel, startX, 280+fontSize, "Velocity Rad/s")
-	// drawFloat(ctx, robotArm.acc, startX, 350+fontSize, "Acceleration Rad/s")
-	// drawFloat(ctx, robotArm.voltage, startX, 420+fontSize, "Voltage Volts")
 } //end displayData

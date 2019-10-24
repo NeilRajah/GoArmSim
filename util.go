@@ -94,3 +94,32 @@ func scalePoint(p Point, scale float64) Point {
 func mouseToCartesian(m pixel.Vec) Point {
 	return scalePoint(Point{m.X - float64(width)/2, m.Y}, 1.0/float64(pixelToMeters))
 } //end MouseToCartesian
+
+//ClampToCSpace keeps a point within a 2-jointed arm's configuration space
+//Point p - point to clamp
+//float64 l1 - first joint's length
+//float64 l2 - second joint's length
+//return - the clamped point
+func ClampToCSpace(p Point, l1, l2 float64) Point {
+	val := p.x*p.x + p.y*p.y //x^2 + y^2
+	in := (l1 - l2) * (l1 - l2)
+	out := (l1 + l2) * (l1 + l2)
+
+	if val > in && val < out { //within extremes of configuration space
+		return p
+	}
+	//not within space
+	theta := math.Atan2(p.y, p.x) //angle from + x-axis to point
+
+	r := 0.0      //length of arm for point on edge of c-space
+	if val < in { //too small
+		r = l1 - l2 //edge of inner
+		r *= 1.001
+	} else { //too big
+		r = l1 + l2 //edge of outer
+		r *= 0.999
+	} //if
+	//r is scaled up/down by small amount to ensure point is within c-space and not *just* outside
+
+	return Point{r * math.Cos(theta), r * math.Sin(theta)}
+} //end clampToCSpace
