@@ -14,6 +14,10 @@ import (
 var yellow [3]int = [3]int{255, 255, 0} //yellow
 var blue [3]int = [3]int{0, 0, 255}     //blue
 
+//Variables
+var calculated bool = false //whether the inverse kinematics has been calculated yet
+var a1, a2 float64          //goal joint angles for the arm to move to
+
 //State represents the state the arm can be in
 type State int
 
@@ -54,9 +58,13 @@ func (loop *ArmLoop) onLoop() {
 		color2 := loop.arm2.arm2.CalcColor(1)
 		loop.arm2.arm2.color = color2
 
-		//calculate joint angles
-		a1, a2 := InverseKinematics(loop.goal, loop.arm2.arm1.angle, loop.arm2.arm2.angle,
-			loop.arm2.arm1.length, loop.arm2.arm2.length)
+		//calculate joint angles only on first loop in this state
+		if !calculated { //if the angle hasn't been calculated already
+			//calculate it
+			a1, a2 = InverseKinematics(loop.goal, loop.arm2.arm1.angle, loop.arm2.arm2.angle,
+				loop.arm2.arm1.length, loop.arm2.arm2.length)
+			calculated = true //set to true so it doesn't ccalculate again
+		} //if
 
 		//move to joint angles
 		loop.arm2.arm1.movePIDFF(a1, loop.arm2.arm1.angle, ToRadians(1))
@@ -68,18 +76,8 @@ func (loop *ArmLoop) onLoop() {
 
 	case finished:
 		loop.arm2.setArmColors(blue) //blue for finished
-
-		// p := loop.goal
-		// t := time.NewTimer(time.Millisecond * 1000)
-		// go func() {
-		// 	<-t.C
-		// 	if loop.goal != p { //if goal is same after the delay
-		// 		loop.state = finished
-		// 	} else {
-		// 		loop.state = goalTracking
-		// 	} //if
-		// 	return
-		// }()
+		calculated = false           //reset the calculated state so the arm calculates the new goal angle next time
+		//delay
 		break
 	} //switch
 } //end onLoop

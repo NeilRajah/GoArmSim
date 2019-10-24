@@ -6,7 +6,7 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
 	"image/color"
@@ -110,7 +110,7 @@ func updateGoal(ctx *canvas.Context) {
 	if canAdd { //if user can add points
 		if ctx.IsMouseDragged { //mouse click
 			pts = append(pts, ghost) //add it to the list of goals
-			fmt.Println("goal:", ghost.x, ghost.y)
+			// fmt.Println("goal:", ghost.x, ghost.y)
 
 			//canAdd and the Timer are used to prevent multiple points be added during one click
 			canAdd = false
@@ -132,7 +132,7 @@ func updateGoal(ctx *canvas.Context) {
 	} //if
 } //end updateGoal
 
-//Update the arm for drawing purposes
+//Update the arm's state machine
 func updateModel() {
 	//update the state for the state machine
 	if robotArm2.isStopped() { //if both joints are stopped and there is another goal
@@ -142,7 +142,7 @@ func updateModel() {
 		} //if
 	} else if pointIndex > len(pts) { //if there is a point in sequence
 		armloop.setState(goalTracking) //start moving to the point
-	} //if
+	}
 
 	armloop.onLoop() //move the arm
 } //end updateModel

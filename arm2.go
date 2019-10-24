@@ -6,6 +6,7 @@
 package main
 
 import (
+	// "fmt"
 	"math"
 	"time"
 )
@@ -51,16 +52,34 @@ func (a2 Arm2) isStopped() bool {
 //return - new first and second joint angles
 func InverseKinematics(p Point, ang1, ang2, a1, a2 float64) (float64, float64) {
 	r := PointDistance(Point{0, 0}, p) //distance from origin to point
+	theta := math.Atan2(p.y, p.x)      //angle counterclockwise from x-axis to point
 
-	q2a := math.Acos((r*r - a1*a1 - a2*a2) / (2 * a1 * a2))                                     //second joint angle
-	q1a := math.Atan2(p.y, p.x) - math.Abs(math.Atan((a2*math.Sin(q2a))/(a1+a2*math.Cos(q2a)))) //first joint angle
+	q2a := math.Acos((r*r - a1*a1 - a2*a2) / (2 * a1 * a2))                      //second joint angle
+	q1a := theta - math.Abs(math.Atan((a2*math.Sin(q2a))/(a1+a2*math.Cos(q2a)))) //first joint angle
 
-	q2b := -math.Acos((r*r - a1*a1 - a2*a2) / (2 * a1 * a2))                                    //second joint angle
-	q1b := math.Atan2(p.y, p.x) + math.Abs(math.Atan((a2*math.Sin(q2a))/(a1+a2*math.Cos(q2a)))) //first joint angle
+	q2b := -math.Acos((r*r - a1*a1 - a2*a2) / (2 * a1 * a2))                     //second joint angle
+	q1b := theta + math.Abs(math.Atan((a2*math.Sin(q2a))/(a1+a2*math.Cos(q2a)))) //first joint angle
 
-	//determine based on distance travelled
-	if (math.Abs(q1a-ang1) + math.Abs(q2a-ang2)) < (math.Abs(q1b-ang1) + math.Abs(q2b-ang2)) {
-		return q1a, q2a
+	//elbow down in (0,45), elbow up in (135,180), least angle movement otherwise [45,135]
+
+	/**
+	if theta > 0 && theta < math.Pi/4 { //between 0 and 45 degrees
+		return q1b, q2b //elbow down
+	} else if theta > 0.75*math.Pi && theta < math.Pi { //between 135 and 180 degrees
+		return q1a, q2a //elbow up
+	} else { //between 45 and 135 degrees
+		//determine based on distance travelled
+		if (math.Abs(q1a-ang1) + math.Abs(q2a-ang2)) < (math.Abs(q1b-ang1) + math.Abs(q2b-ang2)) {
+			return q1a, q2a
+		} //if
+		return q1b, q2b
 	} //if
-	return q1b, q2b
+	**/
+
+	//elbow down in (0,90), elbow up in [90,180)
+	if theta > 0 && theta < math.Pi/2 { //quadrant one
+		return q1b, q2b //elbow down
+	} //if
+	//quadrant two
+	return q1a, q2a //elbow up
 } //end moveToPoint
