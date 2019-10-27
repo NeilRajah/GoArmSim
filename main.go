@@ -129,9 +129,10 @@ func updateGoal(ctx *canvas.Context) {
 func updateModel() {
 	//update the state for the state machine
 	if robotArm2.isStopped() { //if both joints are stopped
-		armloop.setState(finished)   //set the state to finished
+		armloop.setState(finished) //set the state to finished
+
 		if len(pts)-1 > pointIndex { //if there is another point to move to
-			pointIndex++
+			pointIndex++ //request to move to new goal point
 		} //if
 	} //if
 
