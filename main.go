@@ -119,12 +119,8 @@ func updateGoal(ctx *canvas.Context) {
 	//set goal
 	if len(pts) != 0 { //if lists isn't empty
 		if pts[pointIndex] != armloop.goal && armloop.state != goalTracking { //if last point in list isn't already the goal and the arm is finished
-			time.Sleep(time.Millisecond * 250)
-			// t := time.NewTimer(time.Millisecond * 500)
-			// go func() {
-			// <- t.C
-			armloop.setGoal(pts[pointIndex]) //set the next point as the arm's goal
-			// }()
+			time.Sleep(time.Millisecond * 250) //delay before setting goal
+			armloop.setGoal(pts[pointIndex])   //set the next point as the arm's goal
 		} //if
 	} //if
 } //end updateGoal
@@ -133,7 +129,7 @@ func updateGoal(ctx *canvas.Context) {
 func updateModel() {
 	//update the state for the state machine
 	if robotArm2.isStopped() { //if both joints are stopped
-		armloop.setState(finished) //set the state to finished
+		armloop.setState(finished)   //set the state to finished
 		if len(pts)-1 > pointIndex { //if there is another point to move to
 			pointIndex++
 		} //if
