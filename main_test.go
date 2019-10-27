@@ -16,13 +16,14 @@ func TestIK(t *testing.T) {
 	a1, a2 := InverseKinematics(target, 1.0, 0.8, 0, 0)
 	p2 := forwardKinematics(1.0, 0.8, a1, a2)
 
-	// t.Log("Forward kinematics produced: (a1, a2, goal point)", ToDegrees(a1), ToDegrees(a2), p2.x, p2.y)
+	t.Log("Forward kinematics produced: (a1, a2, goal point)", ToDegrees(a1), ToDegrees(a2), p2.x, p2.y)
 
-	if !withinBounds(target, p2, 1.0) {
-		// t.Error("Angles do not produce point")
+	if !WithinBounds(target, p2, 1.0) {
+		t.Error("Angles do not produce point")
 	}
 } //end testIK
 
+//point inside C-space
 func TestCSpaceClampInside(t *testing.T) {
 	l1 := 1.0
 	l2 := 0.8
@@ -40,6 +41,7 @@ func TestCSpaceClampInside(t *testing.T) {
 	}
 }
 
+//point outside outer edge of c-space
 func TestCSpaceClampOutsideOut(t *testing.T) {
 	l1 := 1.0
 	l2 := 0.8
@@ -57,6 +59,7 @@ func TestCSpaceClampOutsideOut(t *testing.T) {
 	}
 }
 
+//point outside inner edge of c-space
 func TestCSpaceClampOutsideIn(t *testing.T) {
 	l1 := 1.0
 	l2 := 0.8
@@ -74,6 +77,7 @@ func TestCSpaceClampOutsideIn(t *testing.T) {
 	}
 }
 
+//point outside of outer edge of c-space in quadrant 2
 func TestCSpaceClampOutsideOutLeft(t *testing.T) {
 	l1 := 1.0
 	l2 := 0.8

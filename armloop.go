@@ -5,11 +5,6 @@
 
 package main
 
-import (
-// "fmt"
-// "time"
-)
-
 //Colors
 var yellow [3]int = [3]int{255, 255, 0} //yellow
 var blue [3]int = [3]int{0, 0, 255}     //blue
@@ -53,9 +48,9 @@ func (loop *ArmLoop) onLoop() {
 
 	case goalTracking:
 		//proportional green for tracking
-		color1 := loop.arm2.arm1.CalcColor(1)
+		color1 := loop.arm2.arm1.calcColor(1)
 		loop.arm2.arm1.color = color1
-		color2 := loop.arm2.arm2.CalcColor(1)
+		color2 := loop.arm2.arm2.calcColor(1)
 		loop.arm2.arm2.color = color2
 
 		//calculate joint angles only on first loop in this state

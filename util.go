@@ -7,7 +7,6 @@ package main
 
 import (
 	"github.com/faiface/pixel"
-	// "github.com/h8gi/canvas"
 	"math"
 )
 
@@ -79,7 +78,6 @@ func withinBounds(target, current Point, tolerance float64) bool {
 		return true
 	}
 	return false
-
 } //end withinBounds
 
 //Scale a point by a value
@@ -119,7 +117,7 @@ func ClampToCSpace(p Point, l1, l2 float64) Point {
 		r = l1 + l2 //edge of outer
 		r *= 0.999
 	} //if
-	//r is scaled up/down by small amount to ensure point is within c-space and not *just* outside
+	//r is scaled up/down by small amount to ensure point is within c-space and not slightly outside due to rounding error
 
 	return Point{r * math.Cos(theta), r * math.Sin(theta)}
 } //end clampToCSpace

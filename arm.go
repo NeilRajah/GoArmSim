@@ -6,8 +6,6 @@
 package main
 
 import (
-	// "github.com/faiface/pixel"
-	// "fmt"
 	"math"
 )
 
@@ -174,11 +172,14 @@ func (a *Arm) setOutput(percent float64) {
 //float64 epsilon - tolerance for the angle in radians
 func (a *Arm) movePID(setpoint, current, epsilon float64) {
 	if a.pid.atTarget && math.Abs(a.vel) < a.maxVel*0.1 { //if at target
-		a.stopped = true
-	} else { //if not
-		a.voltage = MaxVoltage * OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1)
-	}
-	a.update()
+		a.stopped = true //tell the state machine the arm is stopped
+	} else {
+		a.stopped = false //must be set to false in order for multiple commands to work
+	} //if
+
+	//calculate voltage based on the PID output (full PID output = maxVoltage)
+	a.voltage = MaxVoltage * OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1)
+	a.update() //update the arm
 } //end movePID
 
 //drive the arm using PIDFF control (PID + feedforward to hold arm)
@@ -186,15 +187,16 @@ func (a *Arm) movePID(setpoint, current, epsilon float64) {
 //float64 current - current angle of the arm
 //float64 epsilon - tolerance for the angle in radians
 func (a *Arm) movePIDFF(setpoint, current, epsilon float64) {
+	//calculate voltage based on the PID output (full PID output + feedforward = maxVoltage)
 	a.voltage = MaxVoltage*OutputClamp(a.pid.calcPID(setpoint, current, epsilon), -1, 1) + calcFFArm(a)
 
-	a.update()
+	a.update() //update the arm
 
 	if a.pid.atTarget && math.Abs(a.vel) < a.maxVel*0.1 { //if at target
-		a.stopped = true
+		a.stopped = true //tell the state machine the arm is stopped
 	} else {
-		a.stopped = false
-	}
+		a.stopped = false //must be set to false in order for multiple commands to work
+	} //if
 } //end movePIDFF
 
 //move the arm to the line formed by a goal point and origin (single-joint IK)
@@ -231,7 +233,7 @@ func (a Arm) getColor(i int) [3]int {
 
 //Calculate the speed-proportional color for the arm
 //int i - indicated whether R, G or B should be the color selected
-func (a Arm) CalcColor(i int) [3]int {
+func (a Arm) calcColor(i int) [3]int {
 	color := [3]int{0, 0, 0}
 	color[i] = int(OutputClamp((math.Abs(a.vel)/a.maxVel)*127, 0, 127) + 127)
 
