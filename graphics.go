@@ -20,7 +20,7 @@ func setUpCanvas(ctx *canvas.Context) {
 	ctx.Clear()                                                  //empty the canvas
 	ctx.SetColor(colornames.Black)                               //set the drawing color
 	ctx.SetLineWidth(30)                                         //set the line width
-	ctx.LoadFontFace("../resources/HelveticaNeue.ttf", fontSize) //set the font
+	ctx.LoadFontFace("resources/HelveticaNeue.ttf", fontSize) //set the font
 } //end setUpCanvas
 
 //display the end-point coordinate of the arm
