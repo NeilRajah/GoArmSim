@@ -6,8 +6,9 @@
 package main
 
 //Colors
-var yellow [3]int = [3]int{255, 255, 0} //yellow
-var blue [3]int = [3]int{0, 0, 255}     //blue
+var yellow [3]int = [3]int{255, 255, 0}  //yellow
+var blue [3]int = [3]int{0, 0, 255}      //blue
+var white [3]int = [3]int{255, 255, 255} //white
 
 //Variables
 var calculated bool = false //whether the inverse kinematics has been calculated yet
@@ -20,6 +21,7 @@ const (
 	waiting      State = iota //WAITING state is for a point to move to
 	goalTracking              //GOAL_TRACKING state is for moving towards a point
 	finished                  //arm has successfully moved to a point
+	testing                   //used for testing the physics model
 )
 
 //ArmLoop is the loop that controls the arm
@@ -31,7 +33,7 @@ type ArmLoop struct {
 
 //get a string representation of the state
 func (s State) String() string {
-	return [...]string{"waiting", "goalTracking", "finished"}[s]
+	return [...]string{"waiting", "goalTracking", "finished", "testing"}[s]
 } //end String
 
 //Set the state
@@ -40,6 +42,7 @@ func (loop *ArmLoop) setState(s State) {
 	loop.state = s
 } //end setState
 
+//Main loop for the arm that runs every time interval and performs an action based on the arm's state
 func (loop *ArmLoop) onLoop() {
 	switch loop.state {
 	case waiting:
@@ -73,6 +76,11 @@ func (loop *ArmLoop) onLoop() {
 		loop.arm2.setArmColors(blue) //blue for finished
 		calculated = false           //reset the calculated state so the arm calculates the new goal angle next time
 		//delay
+		break
+
+	case testing:
+		loop.arm2.setArmColors(white)
+		loop.arm2.rest()
 		break
 	} //switch
 } //end onLoop

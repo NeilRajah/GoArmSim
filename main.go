@@ -9,6 +9,7 @@ import (
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
 	"image/color"
+	"math"
 	"time"
 )
 
@@ -59,8 +60,12 @@ func main() {
 
 	//draw to the canvas
 	c.Draw(func(ctx *canvas.Context) {
-		updateGoal(ctx)
-		updateModel()
+		if armloop.state != testing {
+			updateGoal(ctx)
+			updateModel()
+		} else {
+			robotArm2.rest()
+		}
 		draw(ctx)
 	})
 } //end main
@@ -88,7 +93,16 @@ func createArm2() {
 	robotArm2.arm2.start = robotArm2.arm1.getEndPtPxl()
 
 	//state machine for the arm
-	armloop = ArmLoop{arm2: robotArm2, state: waiting}
+	armloop = ArmLoop{arm2: robotArm2, state: testing}
+
+	//runs if the arm is in testing
+	if armloop.state == testing {
+		robotArm2.arm1.angle = math.Pi / 2
+		robotArm2.arm2.angle = 0
+		robotArm2.arm2.start = robotArm2.arm1.getEndPtPxl()
+
+		robotArm2.setArmColors(white)
+	} //if
 } //end createArm2
 
 //add the mouse click coordinates as points for the arm

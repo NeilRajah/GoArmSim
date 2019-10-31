@@ -144,7 +144,7 @@ func (a *Arm) setAngle(newAngle float64) {
 
 //Calculate the torque caused on the arm by gravity
 func (a Arm) calcGravTorque() float64 {
-	return a.mass * g * a.length / 2 * math.Cos(a.angle) //mgrcosA
+	return a.mass * g * a.length / 2 * math.Cos(angleBetweenPoints(Point{0, 0}, a.getEndPtM())) //mgrcosA
 } //end calcGravTorque
 
 //Calculate the current acceleration of the arm

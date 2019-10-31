@@ -25,7 +25,9 @@ func (a2 *Arm2) update() {
 //updates the individual arms with zero voltage
 func (a2 Arm2) rest() {
 	a2.update()
+	a2.arm1.voltage = 0
 	a2.arm1.update()
+	a2.arm2.voltage = 0
 	a2.arm2.update()
 } //end rest
 
@@ -66,3 +68,11 @@ func InverseKinematics(p Point, ang1, ang2, a1, a2 float64) (float64, float64) {
 	//quadrant two
 	return q1a, q2a //elbow up
 } //end moveToPoint
+
+//Manually set the acceleration for both joints (used for testing)
+//float64 acc1 - acceleration for first joint
+//float64 acc2 - acceleration for second joint
+func (a2 *Arm2) setJointAccelerations(acc1, acc2 float64) {
+	a2.arm1.acc = acc1
+	a2.arm2.acc = acc2
+} //end setJointAccelerations

@@ -25,7 +25,7 @@ type Motor struct {
 
 	//calculated
 	kResistance float64 //resistance in Ohms
-	kV          float64 //velocity constant of the motor
+	kV          float64 //velocity constant of the motor; radians/second / volt
 } //end struct
 
 //NewMotor returns a newly configured motor pointer based on its name

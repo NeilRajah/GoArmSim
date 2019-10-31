@@ -58,6 +58,13 @@ func PointDistance(p1, p2 Point) float64 {
 	return math.Hypot(p2.x-p1.x, p2.y-p1.y)
 } //end PointDistance
 
+//Calculate the angle between two point measured CCW from the x-axis
+//Point p1 - first point
+//Point p2 - second point
+func angleBetweenPoints(p1, p2 Point) float64 {
+	return math.Atan((p2.y - p1.y) / (p2.x - p1.x))
+} //end angleBetweenPoints
+
 //Calculate the angle formed between two lines using cosine law
 //float64 a - first length of triangle
 //float64 b - second length of triangle

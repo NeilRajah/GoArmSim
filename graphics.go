@@ -6,6 +6,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
 	"strconv"
@@ -16,10 +17,10 @@ const armWidth = 30.0 //thickness of the arm lines in pixels
 //set up the canvas
 //*canvas.Context ctx - responsible for drawing
 func setUpCanvas(ctx *canvas.Context) {
-	ctx.SetColor(colornames.Lightgray)                           //set the bg color
-	ctx.Clear()                                                  //empty the canvas
-	ctx.SetColor(colornames.Black)                               //set the drawing color
-	ctx.SetLineWidth(30)                                         //set the line width
+	ctx.SetColor(colornames.Lightgray)                        //set the bg color
+	ctx.Clear()                                               //empty the canvas
+	ctx.SetColor(colornames.Black)                            //set the drawing color
+	ctx.SetLineWidth(30)                                      //set the line width
 	ctx.LoadFontFace("resources/HelveticaNeue.ttf", fontSize) //set the font
 } //end setUpCanvas
 
@@ -182,9 +183,24 @@ func displayData(ctx *canvas.Context) {
 	case finished:
 		ctx.SetColor(colornames.Blue)
 		break
+	case testing:
+		ctx.SetColor(colornames.White)
+		ctx.DrawString(fmt.Sprintf("%f", ToDegrees(angleBetweenPoints(Point{0, 0}, armloop.arm2.arm1.getEndPtM()))), 100, 100)
+		ctx.DrawString(fmt.Sprintf("%f", ToDegrees(angleBetweenPoints(Point{0, 0}, robotArm2.arm2.get2JEndPtM(robotArm2.arm1.angle)))), 100, 200)
 	} //switch
 	ctx.DrawString(armloop.state.String(), 1400, 200)
+
 	ctx.InvertY()
+
+	if armloop.state == testing {
+		displayPointCoords(ctx, robotArm2.arm2.get2JEndPtM(robotArm2.arm1.angle), 100, 300)
+		ctx.SetColor(colornames.Red)
+		drawPoint(ctx, robotArm2.arm2.get2JEndPtM(robotArm2.arm1.angle), 30)
+		ctx.DrawLine(float64(width)/2, 0, robotArm2.arm2.get2JEndPtPxl(robotArm2.arm1.angle).x, robotArm2.arm2.get2JEndPtPxl(robotArm2.arm1.angle).y)
+		ctx.Stroke()
+		ctx.SetColor(colornames.Blue)
+		drawPoint(ctx, robotArm2.arm2.getEndPtM(), 30)
+	}
 
 	ctx.Pop()
 } //end displayData
