@@ -30,8 +30,8 @@ Inverse Kinematics formulae derived from this video: https://robotacademy.net.au
 
 A geometric approach was chosen for solving the inverse kinematics of the arm due to its relative simplicity. Since the arm only has two joints, the algebraic approach involving complex matrix math would be overcomplicated, and a numerical approach where the solution is found using optimization less effective. The calculations involved in the geometric approach boil down to basic trigonometry after a few key triangles are formulated.
 
-![](../resources/IK1.png)
-![](../resources/IK2.png)
+![](resources/IK1.png)
+![](resources/IK2.png)
 
 Because of the symmetry of the cosine function, there are two solutions to the joint angles. These configurations are referred to as "Elbow Up" and "Elbow Down".
 
