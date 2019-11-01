@@ -71,7 +71,7 @@ State | Function | Color
 :---: | --- | :---:
 waiting | Upon window load, the arm starts in the waiting state, where it waits for a goal point. | Yellow
 goalTracking | When given a goal point, it switches to the goalTracking state. In the first loop of goal tracking, the arm solves the inverse kinematics required to move it to its goal point and saves the joint angles into memory. During all loops in goalTracking, the arm is commanded to move using the PIDF controller to the goal joint angles with a tolerance of 1 degree and voltage output less than 10% (+ or -). | Green (proportional to joint velocity)
-finished | When reaching this tolerance, the state machine switches into its finished state, where it will stay at its current position until another goal point is given. The arm waits a small amount before moving to its next goal point. This process repeats until the window is closed. | blue
+finished | When reaching this tolerance, the state machine switches into its finished state, where it will stay at its current position until another goal point is given. The arm waits a small amount before moving to its next goal point. This process repeats until the window is closed. | Blue
 testing | This state was used primarily for testing the physics model of the arm. It essentially acts outside the rest of the state machine, only updating the arm based on its raw values. | White
 
 ## Potential Improvements
