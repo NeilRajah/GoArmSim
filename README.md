@@ -11,23 +11,25 @@ Motor modelling formulae derived from this book: https://www.chiefdelphi.com/t/p
 
 The arm uses CIM motors at each of its joints. A graph of the CIM motor specifications is shown below:
 <p align="center">
-   <img src="resource/CIM1.png" alt="CIM Motor Specifications" width=400 height=400>
+   <img src="resources/CIM1.png" alt="CIM Motor Specifications" width=800 height=400>
  </p>
  
 The important constants used/calculated in the motor dynamics model are the stall torque (Newton metres), stall current (amperes), free speed (rotations per minute), and free current (amperes). From there, the resistance within the motor and the velocity constant is calculated. Using these constants, the dynamics of the motor is solved. This model is used to calculate the acceleration of the motor given the voltage being applied and its current rotational velocity. The voltage applied provides torque proportional to itself, whereas the voltage produced by the spinning of the motor is put back into the motor and thus subtracted off. These calculations are further used in the full dynamics model.
-
-~ graph for CIM motor
 
 ## Arm Model
 The arm is a two-jointed arm with its second joint able to pass through itself (no collisions between joints). The base joint is powered by two CIM motors as mentioned above with a 159.3:1 gear ratio. The elbow joint is powered by one CIM motor with a 159.3:1 gear ratio. The base joint is 1.0m long with a mass of 30.0kg, while the elbow joint is 0.8m with a mass of 15.0kg.
 
 The configuration space of the arm is defined as the region of space the end-effector (tip of elbow joint) could possibly be in based on the joint angles. The configuration space of this arm is shown below. It is the region of space between two circles above the x-axis. The radius of the inner circle is the length of the base joint minus the length of the elbow joint, and the outer the addition of the two instead.
 
-~image from GUI
+<p align="center">
+   <img src="resources/GUI1.png" alt="User Interface" width=800 height=400>
+ </p>
 
 To determine whether a goal point is within the configuration space, an inequality representing the configuration space needs to be found. If the length of the base joint is a and the length of the elbow joint b, then the inequality to be solved is (a-b)<=(x^2+y^2)<=(a+b). This calculation is performed in the ClampToCSpace function in **util.go**. If the point given is in the inequality, the point is returned as is. If not, it must be determined whether it is inside the region of space bounded by the a-b radius circle, or outside the a+b radius circle. This is done by comparing the distance from the origin to that point. If that distance is less than a-b, the point returned is on the edge of that circle at the angle the original point was. Similarly, when outside the a+b circle, the point is on the edge of the outside. This prevents the inverse kinematics not being able to determine a solution and crashing the robot. To also prevent crashes, the hypotenuse for the inner and outer edge cases used is *slightly* enlargened/shrunk based on if the point was closer to the smaller circle edge of the bigger one. This is done as it was found during development that rounding errors caused by the trigonometric functions would push the points *just* outside configuration space and crash the code.
 
-~Desmos picture
+<p align="center">
+   <img src="resources/Inequality.png" alt="CIM Motor Specifications" width=800 height=400>
+ </p>
 
 ## Inverse Kinematics of the Arm
 Inverse Kinematics formulae derived from this video: https://robotacademy.net.au/lesson/inverse-kinematics-for-a-2-joint-robot-arm-using-geometry/
@@ -45,12 +47,7 @@ Because of the symmetry of the cosine function, there are two solutions to the j
 To decide between the two solutions, the robot operates under the assumption that the end-effector must "face" the goal point. This is done by choosing the set with the negative elbow joint angle (Elbow Down) in quadrant one and positive elbow joint angle (Elbow Up) in quadrant two. This prevents the arm from moving below the y-axis and into the ground when moving between points. 
 
 ## Dynamics Model
-In conjunction with the motor model, gravity is also modeled into the simulator. Calculations are done discretely, with the time interval being 1/FPS, or in this case 20 milliseconds. The torque produced by gravity on each joint is  Every timestamp, the acceleration the arm experiences from gravity is calculated and subtracted off the acceleration due to the motor. 
-- gravity
-- torque provided by motor
-- center of mass, moment of inertia
-- discrete calculations
-- "integration"
+In conjunction with the motor model, gravity is also modeled into the simulator. Calculations are done discretely, with the time interval being 1/FPS, or in this case 20 milliseconds. Every timestamp, the acceleration the arm experiences from gravity is calculated and subtracted off the acceleration due to the motor. The angular acceleration due to gravity is calculated by dividing the torque from gravity by the arm's moment of inertia. The arm is assumed to be a solid rod rotating about one end. The gravity is modeled to act on the center of gravity of the arm, assumed to be at half the length of the arm (even mass distribution)
 
 ## Feedback Controller
 Each joint's angle is stored by the arm and used as sensory input for its feedback control. The arm is controlled by two separate PIDF controllers. The P term, kP, provides voltage output to the arm based on the difference in the current angle and the goal angle, acting as a sort of spring pulling the arm towards the goal position. The D term, kD, acts as a dampener to the arm, providing output based on the rate the error is increasing/decreasing, or the velocity of the arm. This term can be thought of as moving through a fluid, where force is proportional to the object's velocity relative to the fluid.
