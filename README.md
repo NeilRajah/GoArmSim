@@ -1,5 +1,5 @@
 # GoArmSim
-GoArmSim is an interactive program that allows the user to give Cartesian coordinate points to a 2-jointed robotic arm and have it move to them using a simple feedback controller and a (somewhat realistic) physics model.
+GoArmSim is an interactive program that allows the user to give Cartesian coordinate points to a 2-jointed robotic arm and have it move to them using a simple feedback controller and a (somewhat realistic) physics model. Simulation of robotic systems is advantageous as it helps the engineer learn more about the system and more effectively prototype ideas before moving to real-world construction
 
 ## User Interface
 The interface is a minimal GUI using a library designed for created games in Go. It uses a Canvas to draw to and the mouse to select points for the arm to move to. The "ghost" of the user input is the point that would be added to the list if the user clicked their mouse at that time. The user can click and add as many points as they want, and the robot will move through all the points until there are no more points. If given a new point, the arm will switch back into its tracking state and move to the arm.
@@ -25,11 +25,13 @@ The configuration space of the arm is defined as the region of space the end-eff
    <img src="resources/GUI1.png" alt="User Interface" width=800 height=400>
  </p>
 
-To determine whether a goal point is within the configuration space, an inequality representing the configuration space needs to be found. If the length of the base joint is a and the length of the elbow joint b, then the inequality to be solved is (a-b)<=(x^2+y^2)<=(a+b). This calculation is performed in the ClampToCSpace function in **util.go**. If the point given is in the inequality, the point is returned as is. If not, it must be determined whether it is inside the region of space bounded by the a-b radius circle, or outside the a+b radius circle. This is done by comparing the distance from the origin to that point. If that distance is less than a-b, the point returned is on the edge of that circle at the angle the original point was. Similarly, when outside the a+b circle, the point is on the edge of the outside. This prevents the inverse kinematics not being able to determine a solution and crashing the robot. To also prevent crashes, the hypotenuse for the inner and outer edge cases used is *slightly* enlargened/shrunk based on if the point was closer to the smaller circle edge of the bigger one. This is done as it was found during development that rounding errors caused by the trigonometric functions would push the points *just* outside configuration space and crash the code.
+To determine whether a goal point is within the configuration space, an inequality representing the configuration space needs to be found. If the length of the base joint is a and the length of the elbow joint b, then the inequality to be solved is as follows:
 
 <p align="center">
-   <img src="resources/Inequality.png" alt="CIM Motor Specifications" width=800 height=400>
+   <img src="resources/Inequality.png" alt="Inequality Equation" width=400 height=50>
  </p>
+ 
+This calculation is performed in the ClampToCSpace function in **util.go**. If the point given is in the inequality, the point is returned as is. If not, it must be determined whether it is inside the region of space bounded by the a-b radius circle, or outside the a+b radius circle. This is done by comparing the distance from the origin to that point. If that distance is less than a-b, the point returned is on the edge of that circle at the angle the original point was. Similarly, when outside the a+b circle, the point is on the edge of the outside. This prevents the inverse kinematics not being able to determine a solution and crashing the robot. To also prevent crashes, the hypotenuse for the inner and outer edge cases used is *slightly* enlargened/shrunk based on if the point was closer to the smaller circle edge of the bigger one. This is done as it was found during development that rounding errors caused by the trigonometric functions would push the points *just* outside configuration space and crash the code.
 
 ## Inverse Kinematics of the Arm
 Inverse Kinematics formulae derived from this video: https://robotacademy.net.au/lesson/inverse-kinematics-for-a-2-joint-robot-arm-using-geometry/
@@ -45,6 +47,10 @@ Because of the symmetry of the cosine function, there are two solutions to the j
 </p>
 
 To decide between the two solutions, the robot operates under the assumption that the end-effector must "face" the goal point. This is done by choosing the set with the negative elbow joint angle (Elbow Down) in quadrant one and positive elbow joint angle (Elbow Up) in quadrant two. This prevents the arm from moving below the y-axis and into the ground when moving between points. 
+
+<p align="center">
+   <img src="resources/Desmos1.png" alt="Configuration Space Inequality" width=800 height=400>
+ </p>
 
 ## Dynamics Model
 In conjunction with the motor model, gravity is also modeled into the simulator. Calculations are done discretely, with the time interval being 1/FPS, or in this case 20 milliseconds. Every timestamp, the acceleration the arm experiences from gravity is calculated and subtracted off the acceleration due to the motor. The angular acceleration due to gravity is calculated by dividing the torque from gravity by the arm's moment of inertia. The arm is assumed to be a solid rod rotating about one end. The gravity is modeled to act on the center of gravity of the arm, assumed to be at half the length of the arm (even mass distribution)
@@ -62,8 +68,8 @@ A state machine is used to control the operations of the arm. Coupled with the u
 Upon window load, the arm starts in the waiting state, where it waits for a goal point. When given a goal point, it switches to the goalTracking state. In the first loop of goal tracking, the arm solves the inverse kinematics required to move it to its goal point and saves the joint angles into memory. During all loops in goalTracking, the arm is commanded to move using the PIDF controller to the goal joint angles with a tolerance of 1 degree and voltage output less than 10% (+ or -). When reaching this tolerance, the state machine switches into its finished state, where it will stay at its current position until another goal point is given. The arm waits a small amount before moving to its next goal point. This process repeats until the window is closed. An advantage of using a state machine is organizing the code and logical execution of the arm's actions into different modes that it switches through either autonomously or from user/programmer input. 
 
 ## Potential Improvements
-- better decision for pairs (ie. not flipping over at edges of inner c-space)
-- coordinating joint movement to avoid ground (running one after another, slowing one down)
-- coupled physics model instead of separate arms
-- going into ERROR state when given point out of c-space instead of clamping inside
+A simple improvement that could be implemented would be a more efficient behaviour in regards to deciding which configuration calculated from the inverse kinematics to use. This would require a better definition of the arm's behaviour. Currently, the arm is trying to have the end-effector "face" the point it is moving to. Perhaps closer to the inside of the configuration space, it isn't important for the end-effector to face the point and instead choosing the configuration that requires the least movement would be better. Ultimately, understanding the configuration space and placing better constraints gives a more efficient algorithm for planning the motion of the arm.
 
+Currently there are some times when the arm is moving between points where one joint is stopped while the other is moving, or where the end-effector momentarily dips below the ground to move to its setpoint. By coordinating the motion of the joints while moving from one angle to another, both of these problems would be resolved. By scaling the joint velocities, both joints can be moving at the same velocity and reach the goal at roughly the same time. Of course, by introducing the ability to coordinate joint motion, one could also move joints sequentially, having the base move before the elbow or vice versa. By moving the base before the elbow, the end-effector will avoid the ground because the base will be holding the elbow above it. Coordinating this motion would make the movement of the arm faster and collision-free.
+
+The current physics model does not *truly* model the physics of the arm, as each joint moves separately. To demonstrate the inverse kinematics of a 2DoF planar robot arm, this is perfectly fine. However, this becomes important concerning the dynamics and the motion control of the arm. The PIDF controller behaves differently when the feedforward is active or not because of gravity constantly pulling on the arm. An example of what the simulator does not support is the reaction of one joint due to another. This is important because when extending the problem to three dimensions, or increasing the number of joints of the arm, each joint interacts dynamically with another and it is important to be able to be able to model this to better predict the behaviour of the arm. 
