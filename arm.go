@@ -6,6 +6,7 @@
 package main
 
 import (
+	// "fmt"
 	"math"
 )
 
@@ -33,6 +34,9 @@ type Arm struct {
 
 	stopped bool //whether the arm is stopped or not
 
+	isSecondJoint bool    //whether the arm is the second joint or not
+	parentAngle   float64 //angle of the base joint if the arm is the second joint
+
 	color [3]int //array for color
 } //end struct
 
@@ -55,7 +59,7 @@ func NewArm(length, mass, gearRatio, numMotors, kP, kI, kD float64, motorName st
 	arm.angle = angle                        //start at specified angle
 	arm.vel = 0                              //start at rest
 	arm.acc = 0                              //start with no acceleration
-	arm.voltage = 0
+	arm.voltage = 0                          //no voltage being applied
 
 	//add all passed values
 	arm.length = length
@@ -144,7 +148,7 @@ func (a *Arm) setAngle(newAngle float64) {
 
 //Calculate the torque caused on the arm by gravity
 func (a Arm) calcGravTorque() float64 {
-	return a.mass * g * a.length / 2 * math.Cos(angleBetweenPoints(Point{0, 0}, a.getEndPtM())) //mgrcosA
+	return a.mass * g * a.length * 0.5 * math.Cos(a.parentAngle+a.angle) //mgrcosA
 } //end calcGravTorque
 
 //Calculate the current acceleration of the arm
@@ -152,9 +156,12 @@ func (a Arm) calcGravTorque() float64 {
 func (a *Arm) calcAccel(output float64) {
 	voltConst := (a.gearRatio * a.kT) / (a.motor.kResistance * a.moi)                           //proportional to voltage
 	velConst := (a.kT * a.gearRatio * a.gearRatio) / (a.motor.kV * a.motor.kResistance * a.moi) //proportional to velocity
-	torqGrav := a.calcGravTorque()                                                              //mgrcosA
 
-	a.acc = output*voltConst - a.vel*velConst - torqGrav/a.moi
+	//gravity acceleration
+	theta := a.parentAngle + a.angle
+	gravAcc := (3 * math.Cos(theta) * g) / (2 * a.length) //simplified torque / moment of inertia equation
+
+	a.acc = output*voltConst - a.vel*velConst - gravAcc //sum of all contributions
 } //end calcAccel
 
 //MOTION
@@ -218,6 +225,11 @@ func (a *Arm) update() {
 	a.vel += a.acc * dt
 	a.angle += a.vel * dt
 } //end update
+
+func (a *Arm) updateNoPhys() {
+	a.vel += a.acc * dt
+	a.angle += a.vel * dt
+}
 
 //stop the arm by setting the velocity to zero
 func (a *Arm) stop() {

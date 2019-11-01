@@ -51,6 +51,15 @@ func CenterOfMass(p1 Point, m1 float64, p2 Point, m2 float64) Point {
 	return Point{x, y}
 } //end CenterOfMass
 
+//Calculate the midpoint of two pointss
+//Point p1 - first point
+//Point p2 - second point
+func midpoint(p1, p2 Point) Point {
+	x := (p1.x + p2.x) / 2
+	y := (p1.y + p2.y) / 2
+	return Point{x, y}
+} //end midpoint
+
 //PointDistance calculates the length of the hypotenuse formed by two points
 //Point p1 - first point
 //Point p2 - second point

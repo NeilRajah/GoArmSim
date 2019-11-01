@@ -54,7 +54,8 @@ func (pid *pidcontroller) calcPID(setpoint, current, epsilon float64) float64 {
 //calculate the voltage required to hold an arm up at a certain angle
 //Arm a - arm to hold up
 func calcFFArm(a *Arm) float64 {
-	return (a.calcGravTorque() * a.motor.kResistance) / ((a.kT) * a.gearRatio)
+	return (a.calcGravTorque() * a.motor.kResistance) / (a.kT * a.gearRatio)
+	// return 0
 } //end calcFFArm
 
 //return whether the error is within the epsilon bounds or not

@@ -20,6 +20,8 @@ type Arm2 struct {
 //Updates the position of the arms, translating the second joint start to the first joint end
 func (a2 *Arm2) update() {
 	a2.arm2.setStartPt(a2.arm1.getEndPtPxl())
+	a2.arm2.parentAngle = a2.arm1.angle
+	a2.arm1.parentAngle = 0
 } //end update
 
 //updates the individual arms with zero voltage

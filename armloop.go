@@ -75,6 +75,7 @@ func (loop *ArmLoop) onLoop() {
 	case finished:
 		loop.arm2.setArmColors(blue) //blue for finished
 		calculated = false           //reset the calculated state so the arm calculates the new goal angle next time
+		// loop.arm2.rest()
 		//delay
 		break
 

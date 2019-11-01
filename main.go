@@ -9,7 +9,7 @@ import (
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
 	"image/color"
-	"math"
+	// "math"
 	"time"
 )
 
@@ -65,6 +65,10 @@ func main() {
 			updateModel()
 		} else {
 			robotArm2.rest()
+			// robotArm2.setJointAccelerations(0, -2.0*math.Cos(robotArm2.arm2.parentAngle+robotArm2.arm2.angle))
+			// robotArm2.update()
+			// robotArm2.arm1.updateNoPhys()
+			// robotArm2.arm2.updateNoPhys()
 		}
 		draw(ctx)
 	})
@@ -86,6 +90,7 @@ func createArm2() {
 	//joints 1 and 2
 	joint1 := NewArm(1.0, 30.0, 159.3, 2, kP1, kI1, kD1, "cim", 0)
 	joint2 := NewArm(0.8, 15.0, 159.3, 1, kP2, kI2, kD2, "cim", 0)
+	joint2.isSecondJoint = true
 	robotArm2.arm1 = joint1
 	robotArm2.arm2 = joint2
 
@@ -93,12 +98,13 @@ func createArm2() {
 	robotArm2.arm2.start = robotArm2.arm1.getEndPtPxl()
 
 	//state machine for the arm
-	armloop = ArmLoop{arm2: robotArm2, state: testing}
+	armloop = ArmLoop{arm2: robotArm2, state: waiting}
 
 	//runs if the arm is in testing
 	if armloop.state == testing {
-		robotArm2.arm1.angle = math.Pi / 2
-		robotArm2.arm2.angle = 0
+		robotArm2.arm1.angle = ToRadians(0)
+		robotArm2.arm2.angle = ToRadians(0)
+		robotArm2.arm2.vel = 0
 		robotArm2.arm2.start = robotArm2.arm1.getEndPtPxl()
 
 		robotArm2.setArmColors(white)

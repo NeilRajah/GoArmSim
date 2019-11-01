@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/h8gi/canvas"
 	"golang.org/x/image/colornames"
+	"math"
 	"strconv"
 )
 
@@ -172,6 +173,8 @@ func displayData(ctx *canvas.Context) {
 	ctx.Push()
 
 	ctx.InvertY()
+	midpoint := midpoint(robotArm2.arm2.getStartPtM(), robotArm2.arm2.get2JEndPtM(robotArm2.arm2.parentAngle))
+
 	//change text color based on state
 	switch armloop.state {
 	case waiting:
@@ -185,21 +188,23 @@ func displayData(ctx *canvas.Context) {
 		break
 	case testing:
 		ctx.SetColor(colornames.White)
-		ctx.DrawString(fmt.Sprintf("%f", ToDegrees(angleBetweenPoints(Point{0, 0}, armloop.arm2.arm1.getEndPtM()))), 100, 100)
-		ctx.DrawString(fmt.Sprintf("%f", ToDegrees(angleBetweenPoints(Point{0, 0}, robotArm2.arm2.get2JEndPtM(robotArm2.arm1.angle)))), 100, 200)
+		ctx.DrawString("cosine of j2 angle: "+fmt.Sprintf("%f", math.Cos(robotArm2.arm2.angle+robotArm2.arm2.parentAngle)), 100, 100)
+		ctx.DrawString("gravity torque: "+fmt.Sprintf("%f", robotArm2.arm2.calcGravTorque()), 100, 200)
+		ctx.DrawString("j1 vel: "+fmt.Sprintf("%f", robotArm2.arm1.vel), 100, 400)
+		ctx.DrawString("j2 vel: "+fmt.Sprintf("%f", robotArm2.arm2.vel), 100, 500)
 	} //switch
 	ctx.DrawString(armloop.state.String(), 1400, 200)
 
 	ctx.InvertY()
 
 	if armloop.state == testing {
-		displayPointCoords(ctx, robotArm2.arm2.get2JEndPtM(robotArm2.arm1.angle), 100, 300)
+		displayPointCoords(ctx, robotArm2.arm2.get2JEndPtM(robotArm2.arm2.parentAngle), 100, 300)
+		displayPointCoords(ctx, midpoint, 100, 600)
 		ctx.SetColor(colornames.Red)
-		drawPoint(ctx, robotArm2.arm2.get2JEndPtM(robotArm2.arm1.angle), 30)
-		ctx.DrawLine(float64(width)/2, 0, robotArm2.arm2.get2JEndPtPxl(robotArm2.arm1.angle).x, robotArm2.arm2.get2JEndPtPxl(robotArm2.arm1.angle).y)
+		drawPoint(ctx, midpoint, 30)
+		ctx.SetLineWidth(15.0)
+		ctx.DrawLine(float64(width)/2, 0, float64(width)/2+midpoint.x*pixelToMeters, midpoint.y*pixelToMeters)
 		ctx.Stroke()
-		ctx.SetColor(colornames.Blue)
-		drawPoint(ctx, robotArm2.arm2.getEndPtM(), 30)
 	}
 
 	ctx.Pop()
