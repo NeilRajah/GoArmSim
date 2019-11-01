@@ -1,5 +1,5 @@
 # GoArmSim
-GoArmSim is an interactive program that allows the user to give Cartesian coordinate points to a 2-jointed robotic arm and have it move to them using a simple feedback controller and a (somewhat realistic) physics model. Simulation of robotic systems is advantageous as it helps the engineer learn more about the system and more effectively prototype ideas before moving to real-world construction
+GoArmSim is an interactive program that allows users to give Cartesian coordinate points to a 2-jointed robotic arm and have it move to them using a simple feedback controller and a (somewhat realistic) physics model. Simulation of robotic systems is advantageous as it helps the engineer learn more about the system and more effectively prototype ideas before moving to real-world construction
 
 ## User Interface
 The interface is a minimal GUI using a library designed for created games in Go. It uses a Canvas to draw to and the mouse to select points for the arm to move to. The "ghost" of the user input is the point that would be added to the list if the user clicked their mouse at that time. The user can click and add as many points as they want, and the robot will move through all the points until there are no more points. If given a new point, the arm will switch back into its tracking state and move to the arm.
